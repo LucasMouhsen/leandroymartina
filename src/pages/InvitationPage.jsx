@@ -2,9 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWedding } from '../context/useWedding.jsx'
 
-const AUDIO_ACTIVE_LABEL = 'Musica activada'
-const AUTOPLAY_BLOCKED_LABEL = 'El navegador bloqueo el autoplay. Toca play para activarla'
-const AUDIO_PROMPT_LABEL = 'Activa el sonido y toca play'
+const AUTOPLAY_BLOCKED_LABEL = 'Toca en cualquier parte para escuchar la musica'
 const asset = (path) => `${import.meta.env.BASE_URL}${path}`
 
 export default function InvitationPage() {
@@ -146,13 +144,9 @@ export default function InvitationPage() {
                 />
               </button>
 
-              <p className="audio-note">
-                {isPlaying
-                  ? AUDIO_ACTIVE_LABEL
-                  : autoplayBlocked
-                    ? AUTOPLAY_BLOCKED_LABEL
-                    : AUDIO_PROMPT_LABEL}
-              </p>
+              {autoplayBlocked && !isPlaying ? (
+                <p className="audio-note">{AUTOPLAY_BLOCKED_LABEL}</p>
+              ) : null}
             </div>
           </div>
         </section>
