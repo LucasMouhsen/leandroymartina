@@ -1,3 +1,5 @@
+const asset = (path) => `${import.meta.env.BASE_URL}${path}`
+
 const defaultCeremony = {
   label: 'Ceremonia',
   venue: 'Parroquia Nuestra Senora del Valle',
@@ -13,8 +15,8 @@ const defaultReception = {
 export default function EventFeatureHero({
   weddingEvent,
   title,
-  bannerSrc = '/assets/optimized/hero-photo.webp',
-  portraitSrc = '/assets/optimized/party-photo.webp',
+  bannerSrc = asset('assets/optimized/hero-photo.webp'),
+  portraitSrc = asset('assets/optimized/party-photo.webp'),
   portraitAlt,
   ceremony = defaultCeremony,
   reception = defaultReception,

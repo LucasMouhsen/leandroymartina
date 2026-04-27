@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import EventFeatureHero from '../components/EventFeatureHero.jsx'
 import { useWedding } from '../context/useWedding.jsx'
 
+const asset = (path) => `${import.meta.env.BASE_URL}${path}`
+
 const schema = z.object({
   guestName: z.string().min(2, 'Ingresa tu nombre.'),
   guestContact: z.string().min(4, 'Deja una via de contacto.'),
@@ -16,7 +18,7 @@ const freeContributionCard = {
   id: 'free',
   name: 'Aporte libre',
   suggestedAmount: 50000,
-  image: '/assets/optimized/gallery-bg.webp',
+  image: asset('assets/optimized/gallery-bg.webp'),
   description: 'Si preferis sumar con el monto que quieras, podes hacerlo desde aca.',
   category: 'aporte',
 }

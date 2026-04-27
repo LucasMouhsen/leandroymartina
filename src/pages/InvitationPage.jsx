@@ -5,6 +5,7 @@ import { useWedding } from '../context/useWedding.jsx'
 const AUDIO_ACTIVE_LABEL = 'Musica activada'
 const AUTOPLAY_BLOCKED_LABEL = 'El navegador bloqueo el autoplay. Toca play para activarla'
 const AUDIO_PROMPT_LABEL = 'Activa el sonido y toca play'
+const asset = (path) => `${import.meta.env.BASE_URL}${path}`
 
 export default function InvitationPage() {
   const audioRef = useRef(null)
@@ -82,7 +83,7 @@ export default function InvitationPage() {
     <div className="site-shell">
       <audio
         ref={audioRef}
-        src="/assets/original/bg-audio.m4a"
+        src={asset('assets/original/bg-audio.m4a')}
         loop
         playsInline
         preload="none"
@@ -93,7 +94,7 @@ export default function InvitationPage() {
           <div className="hero-stage">
             <img
               className="hero-background"
-              src="/assets/optimized/hero-photo.webp"
+              src={asset('assets/optimized/hero-photo.webp')}
               alt=""
               aria-hidden="true"
               decoding="async"
@@ -115,7 +116,7 @@ export default function InvitationPage() {
           <div className="intro-stage">
             <img
               className="panel-background"
-              src="/assets/optimized/gallery-bg.webp"
+              src={asset('assets/optimized/gallery-bg.webp')}
               alt="Lirio acuarelado de fondo"
               loading="lazy"
               decoding="async"
@@ -136,7 +137,7 @@ export default function InvitationPage() {
                 onClick={toggleAudio}
               >
                 <img
-                  src="/assets/optimized/candidate-mahg9.webp"
+                  src={asset('assets/optimized/candidate-mahg9.webp')}
                   alt=""
                   aria-hidden="true"
                   loading="lazy"
@@ -157,7 +158,7 @@ export default function InvitationPage() {
 
         <section className="ceremony-section">
           <div className="ceremony-sprig" aria-hidden="true">
-            <img src="/assets/optimized/floral-cluster.webp" alt="" loading="lazy" decoding="async" />
+            <img src={asset('assets/optimized/floral-cluster.webp')} alt="" loading="lazy" decoding="async" />
           </div>
 
           <div className="ceremony-layout">
@@ -171,7 +172,7 @@ export default function InvitationPage() {
                 Nuestra Senora del Valle
               </p>
               <div className="section-divider" aria-hidden="true">
-                <img src="/assets/original/divider-light.svg" alt="" />
+                <img src={asset('assets/original/divider-light.svg')} alt="" />
               </div>
               <p className="section-time">
                 15.00 hs
@@ -188,7 +189,7 @@ export default function InvitationPage() {
 
             <img
               className="ceremony-image"
-              src="/assets/optimized/ceremony-photo.webp"
+              src={asset('assets/optimized/ceremony-photo.webp')}
               alt="Ilustracion de la parroquia"
               loading="lazy"
               decoding="async"
@@ -200,12 +201,12 @@ export default function InvitationPage() {
           <div className="reception-layout">
             <div className="reception-visual">
               <div className="reception-flower" aria-hidden="true">
-                <img src="/assets/optimized/reception-photo.webp" alt="" loading="lazy" decoding="async" />
+                <img src={asset('assets/optimized/reception-photo.webp')} alt="" loading="lazy" decoding="async" />
               </div>
 
               <img
                 className="reception-image"
-                src="/assets/optimized/party-photo.webp"
+                src={asset('assets/optimized/party-photo.webp')}
                 alt="Club Hipico San Jorge"
                 loading="lazy"
                 decoding="async"
@@ -226,7 +227,7 @@ export default function InvitationPage() {
                 Club Hipico San Jorge
               </p>
               <div className="reception-divider" aria-hidden="true">
-                <img src="/assets/original/divider-dark.svg" alt="" />
+                <img src={asset('assets/original/divider-dark.svg')} alt="" />
               </div>
               <p className="section-time section-time--light">
                 17.30 hs
@@ -259,28 +260,28 @@ export default function InvitationPage() {
               <div className="gifts-spray" aria-hidden="true">
                 <img
                   className="gift-stem gift-stem--eucalyptus"
-                  src="/assets/optimized/dress-shape-1.webp"
+                  src={asset('assets/optimized/dress-shape-1.webp')}
                   alt=""
                   loading="lazy"
                   decoding="async"
                 />
                 <img
                   className="gift-stem gift-stem--wheat"
-                  src="/assets/optimized/dress-shape-3.webp"
+                  src={asset('assets/optimized/dress-shape-3.webp')}
                   alt=""
                   loading="lazy"
                   decoding="async"
                 />
                 <img
                   className="gift-stem gift-stem--mimosa"
-                  src="/assets/optimized/dress-shape-4.webp"
+                  src={asset('assets/optimized/dress-shape-4.webp')}
                   alt=""
                   loading="lazy"
                   decoding="async"
                 />
                 <img
                   className="gift-stem gift-stem--cluster"
-                  src="/assets/optimized/floral-cluster.webp"
+                  src={asset('assets/optimized/floral-cluster.webp')}
                   alt=""
                   loading="lazy"
                   decoding="async"
@@ -299,7 +300,7 @@ export default function InvitationPage() {
         <section className="olive-panel dress-section">
           <img
             className="dress-background"
-            src="/assets/optimized/gallery-bg.webp"
+            src={asset('assets/optimized/gallery-bg.webp')}
             alt=""
             aria-hidden="true"
             loading="lazy"
@@ -314,7 +315,7 @@ export default function InvitationPage() {
 
             <img
               className="dress-illustration"
-              src="/assets/original/dress-card.svg"
+              src={asset('assets/original/dress-card.svg')}
               alt="Ilustracion de dress code elegante"
               loading="lazy"
               decoding="async"
@@ -324,7 +325,7 @@ export default function InvitationPage() {
               ELEGANTE
             </p>
             <div className="reception-divider dress-divider" aria-hidden="true">
-              <img src="/assets/original/divider-dark.svg" alt="" />
+              <img src={asset('assets/original/divider-dark.svg')} alt="" />
             </div>
           </div>
         </section>
@@ -332,7 +333,7 @@ export default function InvitationPage() {
         <section className="rsvp-section">
           <img
             className="rsvp-background"
-            src="/assets/optimized/hero-photo.webp"
+            src={asset('assets/optimized/hero-photo.webp')}
             alt=""
             aria-hidden="true"
             loading="lazy"
@@ -351,7 +352,7 @@ export default function InvitationPage() {
             </button>
             <img
               className="rsvp-icon"
-              src="/assets/optimized/rsvp-icon.webp"
+              src={asset('assets/optimized/rsvp-icon.webp')}
               alt=""
               aria-hidden="true"
               loading="lazy"
