@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import SecondaryFooterNav from '../components/SecondaryFooterNav.jsx'
 
 export default function FeatureLayout() {
   return (
@@ -17,6 +18,15 @@ export default function FeatureLayout() {
       </header>
 
       <Outlet />
+
+      <SecondaryFooterNav
+        links={[
+          { to: '/', text: 'Invitacion' },
+          { to: '/regalos', text: 'Regalos' },
+          { to: '/mensajes', text: 'Mensajes' },
+          { to: '/admin/login', text: 'Panel' },
+        ]}
+      />
     </div>
   )
 }

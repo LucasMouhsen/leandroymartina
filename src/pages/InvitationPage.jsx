@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import SecondaryFooterNav from '../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../context/useWedding.jsx'
 
 const AUTOPLAY_BLOCKED_LABEL = 'Toca en cualquier parte para escuchar la musica'
@@ -378,20 +378,15 @@ export default function InvitationPage() {
             />
           </div>
         </section>
-      </main>
 
-      <aside className="portal-dock">
-        <div className="portal-dock__label">
-          <span>Funciones nuevas</span>
-          <strong>Demo operativa</strong>
-        </div>
-        <div className="portal-dock__actions">
-          <Link to="/confirmar/familia-garcia-2026">RSVP</Link>
-          <Link to="/regalos">Regalos</Link>
-          <Link to="/mensajes">Mensajes</Link>
-          <Link to="/admin/login">Panel</Link>
-        </div>
-      </aside>
+        <SecondaryFooterNav
+          links={[
+            { to: '/regalos', text: 'Regalos' },
+            { to: '/mensajes', text: 'Mensajes' },
+            { to: '/admin/login', text: 'Panel' },
+          ]}
+        />
+      </main>
     </div>
   )
 }

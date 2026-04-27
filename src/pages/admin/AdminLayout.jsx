@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import SecondaryFooterNav from '../../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../../context/useWedding.jsx'
 
 const links = [
@@ -37,6 +38,15 @@ export default function AdminLayout() {
 
       <main className="admin-content">
         <Outlet />
+        <SecondaryFooterNav
+          label="Navegacion general"
+          links={[
+            { to: '/', text: 'Invitacion' },
+            { to: '/regalos', text: 'Regalos' },
+            { to: '/mensajes', text: 'Mensajes' },
+            { to: '/admin/reportes', text: 'Panel' },
+          ]}
+        />
       </main>
     </div>
   )
