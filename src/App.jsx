@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import './App.css'
 import './site.css'
 import { WeddingProvider } from './context/WeddingContext.jsx'
@@ -46,7 +46,7 @@ function ProtectedAdmin() {
 
 function AppRoutes() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<InvitationPage />} />
@@ -74,7 +74,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 
