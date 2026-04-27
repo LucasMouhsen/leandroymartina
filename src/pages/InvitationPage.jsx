@@ -8,6 +8,7 @@ const asset = (path) => `${import.meta.env.BASE_URL}${path}`
 
 export default function InvitationPage() {
   const audioRef = useRef(null)
+  const userPausedRef = useRef(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [autoplayBlocked, setAutoplayBlocked] = useState(false)
   const { weddingEvent } = useWedding()
@@ -36,6 +37,7 @@ export default function InvitationPage() {
       try {
         seekToStartOffset()
         await audio.play()
+        userPausedRef.current = false
         setAutoplayBlocked(false)
       } catch {
         setIsPlaying(false)
@@ -46,7 +48,7 @@ export default function InvitationPage() {
     attemptAutoplay()
 
     const handleFirstInteraction = () => {
-      if (!audio.paused) {
+      if (!audio.paused || !autoplayBlocked || userPausedRef.current) {
         return
       }
 
@@ -70,7 +72,7 @@ export default function InvitationPage() {
       window.removeEventListener('wheel', handleFirstInteraction)
       window.removeEventListener('scroll', handleFirstInteraction)
     }
-  }, [])
+  }, [autoplayBlocked])
 
   const toggleAudio = async () => {
     const audio = audioRef.current
@@ -85,6 +87,7 @@ export default function InvitationPage() {
           audio.currentTime = AUDIO_START_OFFSET
         }
         await audio.play()
+        userPausedRef.current = false
         setAutoplayBlocked(false)
       } catch {
         setIsPlaying(false)
@@ -93,6 +96,8 @@ export default function InvitationPage() {
       return
     }
 
+    userPausedRef.current = true
+    setAutoplayBlocked(false)
     audio.pause()
   }
 

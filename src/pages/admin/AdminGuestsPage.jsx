@@ -397,8 +397,8 @@ export default function AdminGuestsPage() {
             </div>
           </fieldset>
 
-          <div className="form-grid two-columns">
-            {invitationMode === 'group' ? (
+          {invitationMode === 'group' ? (
+            <div className="form-grid two-columns">
               <label className={errors.displayLabel ? 'has-error' : ''}>
                 Nombre del grupo
                 <input
@@ -408,9 +408,17 @@ export default function AdminGuestsPage() {
                 />
                 {errors.displayLabel ? <span>{errors.displayLabel.message}</span> : null}
               </label>
-            ) : (
-              <div />
-            )}
+              <label>
+                Categoria
+                <select {...register('category')}>
+                  <option value="familia">Familia</option>
+                  <option value="amigos">Amigos</option>
+                  <option value="trabajo">Trabajo</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </label>
+            </div>
+          ) : (
             <label>
               Categoria
               <select {...register('category')}>
@@ -420,7 +428,7 @@ export default function AdminGuestsPage() {
                 <option value="otros">Otros</option>
               </select>
             </label>
-          </div>
+          )}
 
           {invitationMode === 'individual' ? (
             <>
