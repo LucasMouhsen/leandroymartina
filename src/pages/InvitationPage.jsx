@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useWedding } from '../context/useWedding.jsx'
 
 const AUTOPLAY_BLOCKED_LABEL = 'Toca en cualquier parte para escuchar la musica'
+const AUDIO_START_OFFSET = 0.5
 const asset = (path) => `${import.meta.env.BASE_URL}${path}`
 
 export default function InvitationPage() {
@@ -20,12 +21,20 @@ export default function InvitationPage() {
 
     const handlePlay = () => setIsPlaying(true)
     const handlePause = () => setIsPlaying(false)
+    const seekToStartOffset = () => {
+      if (audio.currentTime < AUDIO_START_OFFSET) {
+        audio.currentTime = AUDIO_START_OFFSET
+      }
+    }
 
     audio.addEventListener('play', handlePlay)
     audio.addEventListener('pause', handlePause)
+    audio.addEventListener('loadedmetadata', seekToStartOffset)
+    audio.addEventListener('canplay', seekToStartOffset)
 
     const attemptAutoplay = async () => {
       try {
+        seekToStartOffset()
         await audio.play()
         setAutoplayBlocked(false)
       } catch {
@@ -51,6 +60,8 @@ export default function InvitationPage() {
     return () => {
       audio.removeEventListener('play', handlePlay)
       audio.removeEventListener('pause', handlePause)
+      audio.removeEventListener('loadedmetadata', seekToStartOffset)
+      audio.removeEventListener('canplay', seekToStartOffset)
       window.removeEventListener('pointerdown', handleFirstInteraction)
       window.removeEventListener('keydown', handleFirstInteraction)
       window.removeEventListener('touchstart', handleFirstInteraction)
@@ -66,6 +77,9 @@ export default function InvitationPage() {
 
     if (audio.paused) {
       try {
+        if (audio.currentTime < AUDIO_START_OFFSET) {
+          audio.currentTime = AUDIO_START_OFFSET
+        }
         await audio.play()
         setAutoplayBlocked(false)
       } catch {
