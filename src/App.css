@@ -1,0 +1,880 @@
+.site-shell {
+  min-height: 100vh;
+  padding: 0;
+}
+
+.invitation-page {
+  width: min(100%, 48rem);
+  margin: 0 auto;
+  background: #fff;
+}
+
+.hero-section,
+.ceremony-section,
+.gifts-section,
+.rsvp-section {
+  position: relative;
+  background: #fff;
+}
+
+.olive-panel {
+  position: relative;
+  overflow: hidden;
+  background: #c2bca2;
+}
+
+.hero-section {
+  min-height: 44.5rem;
+  overflow: hidden;
+}
+
+.hero-stage {
+  position: relative;
+  min-height: inherit;
+}
+
+.hero-background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.hero-copy {
+  position: absolute;
+  top: 9.35rem;
+  right: 0.85rem;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 54%;
+  text-align: center;
+}
+
+.hero-title {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  color: #7f8f75;
+  font-size: clamp(2.95rem, 10.6vw, 4.95rem);
+  font-weight: 300;
+  line-height: 0.94;
+  text-transform: uppercase;
+  letter-spacing: 0.032em;
+}
+
+.hero-connector {
+  font-family: var(--font-script);
+  font-size: 0.58em;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.hero-date {
+  margin: 1.6rem 0 0;
+  color: #7f8f75;
+  font-size: clamp(1.05rem, 3.7vw, 1.5rem);
+  font-style: italic;
+}
+
+.intro-panel {
+  min-height: 53rem;
+}
+
+.intro-stage {
+  position: relative;
+  min-height: inherit;
+}
+
+.panel-background {
+  position: absolute;
+  inset: 0;
+  width: 145%;
+  max-width: none;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+  transform: translateX(-18%) scale(1.03);
+}
+
+.intro-copy {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 0 2rem 4.5rem;
+  color: #fff;
+  text-align: left;
+}
+
+.script-heading {
+  margin: 0 0 1rem;
+  color: #fff;
+  font-family: var(--font-script);
+  font-size: clamp(4.4rem, 16vw, 6.6rem);
+  font-weight: 400;
+  line-height: 0.88;
+}
+
+.intro-copy p {
+  max-width: 16rem;
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.2rem, 4.9vw, 1.85rem);
+  font-style: italic;
+  line-height: 1.42;
+}
+
+.audio-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7.1rem;
+  height: 7.1rem;
+  margin-top: 3.1rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.audio-button img {
+  width: 100%;
+  height: 100%;
+}
+
+.audio-note {
+  margin-top: 1.5rem;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.ceremony-section {
+  padding: 6.25rem 1.85rem 3.8rem;
+  text-align: center;
+}
+
+.ceremony-layout {
+  display: block;
+}
+
+.ceremony-sprig {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.9rem;
+}
+
+.ceremony-sprig img {
+  width: min(66vw, 15rem);
+}
+
+.section-title,
+.gifts-title {
+  margin: 0;
+  color: #97a066;
+  font-size: clamp(3.1rem, 11vw, 5.45rem);
+  font-weight: 500;
+  line-height: 1.04;
+}
+
+.section-place,
+.reception-place,
+.gifts-copy {
+  margin: 1.8rem 0 0;
+  color: #97a066;
+  font-size: clamp(1.45rem, 5.65vw, 2.3rem);
+  line-height: 1.24;
+}
+
+.section-divider {
+  display: flex;
+  justify-content: center;
+  margin: 1.9rem 0 1rem;
+}
+
+.section-divider img {
+  width: 4.15rem;
+}
+
+.section-time {
+  margin: 1rem 0 0;
+  color: #97a066;
+  font-size: clamp(2rem, 7.9vw, 3rem);
+}
+
+.section-time--light {
+  color: #fff;
+}
+
+.map-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 8.6rem;
+  margin-top: 1.65rem;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  font-size: clamp(1.05rem, 4vw, 1.46rem);
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  padding: 0.95rem 1.9rem;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.map-button:disabled {
+  cursor: not-allowed;
+}
+
+.map-button--olive {
+  background: #afb12d;
+}
+
+.map-button--gold {
+  background: #efd27d;
+}
+
+.ceremony-image {
+  display: block;
+  width: min(89vw, 21.75rem);
+  margin: 2.5rem auto 0;
+}
+
+.reception-section {
+  padding: 2rem 1.9rem 4rem;
+  text-align: center;
+}
+
+.reception-layout {
+  display: block;
+}
+
+.reception-visual {
+  position: relative;
+}
+
+.reception-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reception-flower {
+  position: absolute;
+  top: 3rem;
+  right: 3.25rem;
+  width: min(18vw, 5.75rem);
+}
+
+.reception-flower img {
+  width: 100%;
+}
+
+.reception-copy {
+  padding-top: 8.6rem;
+}
+
+.reception-title {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(3rem, 11vw, 5rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.reception-script {
+  margin: 0.1rem 0 0;
+  color: #fff;
+  font-family: var(--font-script);
+  font-size: clamp(3rem, 12vw, 4.8rem);
+  line-height: 0.9;
+}
+
+.reception-image {
+  display: block;
+  width: min(100%, 18.9rem);
+  margin: 2.25rem auto 0;
+}
+
+.reception-place {
+  color: #fff;
+}
+
+.reception-divider {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0 1rem;
+}
+
+.reception-divider img {
+  width: min(100%, 12rem);
+  opacity: 0.78;
+}
+
+.gifts-section {
+  padding: 4.9rem 1.9rem 3.7rem;
+  text-align: center;
+}
+
+.gifts-layout {
+  display: block;
+}
+
+.gifts-title {
+  max-width: 21rem;
+  margin-inline: auto;
+}
+
+.gifts-copy {
+  max-width: 20rem;
+  margin-inline: auto;
+  line-height: 1.45;
+}
+
+.gifts-spray {
+  position: relative;
+  width: min(58vw, 13rem);
+  height: min(42vw, 10rem);
+  margin: 2.8rem auto 3rem;
+}
+
+.gift-stem {
+  position: absolute;
+  transform-origin: center;
+}
+
+.gift-stem--eucalyptus {
+  top: 0.6rem;
+  left: 2.8rem;
+  width: 4.8rem;
+  transform: rotate(-58deg);
+}
+
+.gift-stem--wheat {
+  top: 1rem;
+  left: -0.1rem;
+  width: 5.1rem;
+  transform: rotate(-45deg);
+}
+
+.gift-stem--mimosa {
+  top: 2.35rem;
+  left: 4.35rem;
+  width: 4.55rem;
+  transform: rotate(-41deg);
+}
+
+.gift-stem--cluster {
+  top: 1rem;
+  left: 5.65rem;
+  width: 5.8rem;
+  transform: rotate(-41deg);
+}
+
+.gift-details {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.gift-details p {
+  margin: 0;
+  color: #97a066;
+  font-size: clamp(1.18rem, 4.35vw, 1.8rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dress-section {
+  min-height: 46rem;
+}
+
+.dress-background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  transform: rotate(180deg);
+}
+
+.dress-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 46rem;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 4.2rem 1.85rem 3.2rem 8rem;
+  text-align: center;
+}
+
+.dress-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1.15rem;
+  color: #fff;
+}
+
+.dress-script {
+  font-family: var(--font-script);
+  font-size: clamp(4.1rem, 14vw, 6rem);
+  line-height: 0.8;
+}
+
+.dress-code-word {
+  font-size: clamp(3.95rem, 12vw, 6rem);
+  font-weight: 600;
+  line-height: 0.88;
+}
+
+.dress-illustration {
+  width: min(100%, 19rem);
+  margin: 0 auto;
+  filter: brightness(0) invert(1) opacity(0.82);
+}
+
+.dress-label {
+  width: 100%;
+  margin: 1.9rem 0 0;
+  color: #fff;
+  font-size: clamp(2.25rem, 8vw, 3.5rem);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.dress-divider {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.dress-divider img {
+  width: min(100%, 12rem);
+}
+
+.rsvp-section {
+  min-height: 35.5rem;
+  overflow: hidden;
+}
+
+.rsvp-background {
+  position: absolute;
+  inset: 0 auto 0 10%;
+  width: 90%;
+  height: 100%;
+  object-fit: fill;
+  transform: rotate(180deg);
+}
+
+.rsvp-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 35.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3.5rem 2rem 3.5rem;
+}
+
+.rsvp-copy h2 {
+  max-width: 14rem;
+  margin: 0;
+  color: #97a066;
+  font-size: clamp(3.55rem, 12vw, 5.8rem);
+  font-weight: 300;
+  line-height: 1.08;
+}
+
+.rsvp-copy .map-button {
+  margin-top: 2rem;
+}
+
+.rsvp-icon {
+  display: block;
+  width: 4.1rem;
+  margin-top: 2rem;
+  margin-left: 1rem;
+}
+
+.hero-background,
+.hero-copy,
+.panel-background,
+.intro-copy,
+.ceremony-sprig,
+.ceremony-image,
+.reception-flower,
+.reception-image,
+.gifts-spray,
+.dress-background,
+.dress-content,
+.rsvp-background,
+.rsvp-copy {
+  will-change: auto;
+}
+
+.hero-background,
+.hero-copy {
+  animation: invitation-fade-up 0.72s ease-out both;
+}
+
+.invitation-enter--delay-1 {
+  animation-delay: 0.12s;
+}
+
+.audio-button,
+.map-button {
+  transition: transform 180ms ease, opacity 180ms ease, filter 180ms ease;
+}
+
+.audio-button:hover,
+.map-button:hover {
+  transform: translateY(-2px);
+}
+
+.audio-button:active,
+.map-button:active {
+  transform: scale(0.98);
+}
+
+@keyframes invitation-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .invitation-page > section {
+    min-height: 90vh;
+    min-height: 90svh;
+  }
+}
+
+@media (min-width: 48rem) {
+  .site-shell {
+    padding: 2rem 1rem 4rem;
+  }
+
+  .invitation-page {
+    box-shadow: 0 20px 50px rgba(78, 86, 67, 0.14);
+  }
+
+  .hero-section {
+    min-height: 48rem;
+  }
+
+  .hero-copy {
+    top: 11.2rem;
+    right: 1.35rem;
+    width: 50%;
+  }
+
+  .intro-panel {
+    min-height: 56rem;
+  }
+
+  .panel-background {
+    width: 132%;
+    transform: translateX(-11%) scale(1.02);
+  }
+
+  .ceremony-section,
+  .gifts-section,
+  .reception-section {
+    padding-inline: 4rem;
+  }
+
+  .ceremony-image {
+    width: min(100%, 24rem);
+  }
+
+  .gifts-spray {
+    width: 14.5rem;
+    height: 11rem;
+  }
+
+  .gift-stem--eucalyptus {
+    left: 3.3rem;
+  }
+
+  .gift-stem--wheat {
+    left: 0.4rem;
+    width: 5.6rem;
+  }
+
+  .gift-stem--mimosa {
+    left: 5rem;
+  }
+
+  .gift-stem--cluster {
+    left: 6.6rem;
+  }
+
+  .dress-content {
+    padding-inline: 12rem 4rem;
+  }
+
+  .rsvp-copy {
+    padding-inline: 4rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  .site-shell {
+    padding: 0 0 4rem;
+  }
+
+  .invitation-page {
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+  }
+
+  .hero-section {
+    min-height: min(100svh, 58rem);
+  }
+
+  .hero-stage {
+    width: min(100%, 100rem);
+    min-height: inherit;
+    margin: 0 auto;
+  }
+
+  .hero-background {
+    inset: 0 auto 0 0;
+    width: min(44%, 43rem);
+    object-fit: cover;
+    object-position: left top;
+  }
+
+  .hero-copy {
+    top: 50%;
+    right: clamp(2rem, 6vw, 5rem);
+    width: min(42rem, 42%);
+    transform: translateY(-50%);
+  }
+
+  .hero-title {
+    font-size: clamp(5.25rem, 6.4vw, 7.2rem);
+  }
+
+  .hero-date {
+    font-size: 1.75rem;
+  }
+
+  .intro-panel {
+    min-height: min(92svh, 54rem);
+  }
+
+  .intro-stage {
+    width: min(100%, 100rem);
+    min-height: inherit;
+    margin: 0 auto;
+  }
+
+  .panel-background {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center right;
+    transform: none;
+  }
+
+  .intro-copy {
+    max-width: 34rem;
+    padding: 0 0 5.25rem clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  .intro-copy p {
+    max-width: 24rem;
+    font-size: 1.8rem;
+  }
+
+  .audio-note {
+    max-width: 22rem;
+    font-size: 1.15rem;
+  }
+
+  .ceremony-section,
+  .reception-section,
+  .gifts-section {
+    padding: 5rem clamp(2rem, 5vw, 5.5rem);
+  }
+
+  .ceremony-sprig img {
+    width: 11rem;
+  }
+
+  .ceremony-sprig {
+    max-width: 96rem;
+    margin: 0 auto 2rem;
+    justify-content: flex-start;
+    padding-left: 3rem;
+  }
+
+  .ceremony-layout {
+    display: grid;
+    grid-template-columns: minmax(24rem, 32rem) minmax(26rem, 38rem);
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(2.5rem, 5vw, 5rem);
+    max-width: 96rem;
+    margin: 0 auto;
+  }
+
+  .ceremony-copy {
+    text-align: left;
+  }
+
+  .section-title,
+  .gifts-title {
+    font-size: clamp(4rem, 5vw, 5.9rem);
+  }
+
+  .section-place,
+  .reception-place,
+  .gifts-copy {
+    font-size: clamp(1.55rem, 2vw, 2.15rem);
+  }
+
+  .section-time {
+    font-size: clamp(2.35rem, 2.8vw, 3.3rem);
+  }
+
+  .section-divider {
+    justify-content: flex-start;
+  }
+
+  .ceremony-image {
+    width: min(100%, 36rem);
+    margin: 0 0 0 auto;
+  }
+
+  .reception-layout {
+    display: grid;
+    grid-template-columns: minmax(23rem, 32rem) minmax(24rem, 38rem);
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(2.5rem, 5vw, 5.5rem);
+    max-width: 96rem;
+    margin: 0 auto;
+  }
+
+  .reception-visual {
+    display: flex;
+    min-height: 25rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .reception-flower {
+    top: -0.75rem;
+    right: auto;
+    left: 0.25rem;
+    width: 7rem;
+  }
+
+  .reception-image {
+    width: min(100%, 30rem);
+    margin: 0;
+  }
+
+  .reception-details {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .reception-copy {
+    padding-top: 0;
+  }
+
+  .reception-divider {
+    justify-content: flex-start;
+  }
+
+  .gifts-copy {
+    max-width: 36rem;
+  }
+
+  .gifts-layout {
+    display: grid;
+    grid-template-columns: minmax(28rem, 1.2fr) minmax(22rem, 1fr);
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(2.5rem, 5vw, 5rem);
+    max-width: 96rem;
+    margin: 0 auto;
+  }
+
+  .gifts-message {
+    text-align: left;
+  }
+
+  .gifts-title,
+  .gifts-copy {
+    margin-inline: 0;
+  }
+
+  .gifts-bank {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .gift-details p {
+    font-size: clamp(1.4rem, 1.75vw, 2rem);
+  }
+
+  .dress-section {
+    min-height: min(86svh, 52rem);
+  }
+
+  .dress-content {
+    min-height: min(86svh, 52rem);
+    max-width: 96rem;
+    margin: 0 auto;
+    padding: 4.5rem clamp(3rem, 7vw, 7rem) 3rem clamp(18rem, 24vw, 23rem);
+  }
+
+  .dress-illustration {
+    width: min(100%, 24rem);
+  }
+
+  .rsvp-section {
+    min-height: min(74svh, 40rem);
+  }
+
+  .rsvp-background {
+    inset: 0 0 0 auto;
+    width: min(44vw, 36rem);
+    object-fit: cover;
+    object-position: center;
+    transform: none;
+  }
+
+  .rsvp-copy {
+    min-height: min(74svh, 40rem);
+    max-width: 96rem;
+    margin: 0 auto;
+    padding: 4rem clamp(3rem, 7vw, 7rem);
+  }
+
+  .rsvp-copy h2 {
+    max-width: 22rem;
+    font-size: clamp(4.3rem, 5vw, 5.8rem);
+  }
+}
