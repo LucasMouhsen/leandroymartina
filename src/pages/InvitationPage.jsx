@@ -56,6 +56,8 @@ export default function InvitationPage() {
     window.addEventListener('pointerdown', handleFirstInteraction, { passive: true })
     window.addEventListener('keydown', handleFirstInteraction)
     window.addEventListener('touchstart', handleFirstInteraction, { passive: true })
+    window.addEventListener('wheel', handleFirstInteraction, { passive: true })
+    window.addEventListener('scroll', handleFirstInteraction, { passive: true })
 
     return () => {
       audio.removeEventListener('play', handlePlay)
@@ -65,6 +67,8 @@ export default function InvitationPage() {
       window.removeEventListener('pointerdown', handleFirstInteraction)
       window.removeEventListener('keydown', handleFirstInteraction)
       window.removeEventListener('touchstart', handleFirstInteraction)
+      window.removeEventListener('wheel', handleFirstInteraction)
+      window.removeEventListener('scroll', handleFirstInteraction)
     }
   }, [])
 
