@@ -11,7 +11,6 @@ export default function InvitationPage() {
   const audioRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [autoplayBlocked, setAutoplayBlocked] = useState(false)
-  const [audioEnabled, setAudioEnabled] = useState(false)
   const { weddingEvent } = useWedding()
 
   useEffect(() => {
@@ -27,16 +26,8 @@ export default function InvitationPage() {
     audio.addEventListener('play', handlePlay)
     audio.addEventListener('pause', handlePause)
 
-    if (!audioEnabled) {
-      return () => {
-        audio.removeEventListener('play', handlePlay)
-        audio.removeEventListener('pause', handlePause)
-      }
-    }
-
     const attemptAutoplay = async () => {
       try {
-        audio.load()
         await audio.play()
         setAutoplayBlocked(false)
       } catch {
@@ -47,11 +38,26 @@ export default function InvitationPage() {
 
     attemptAutoplay()
 
+    const handleFirstInteraction = () => {
+      if (!audio.paused) {
+        return
+      }
+
+      attemptAutoplay()
+    }
+
+    window.addEventListener('pointerdown', handleFirstInteraction, { passive: true })
+    window.addEventListener('keydown', handleFirstInteraction)
+    window.addEventListener('touchstart', handleFirstInteraction, { passive: true })
+
     return () => {
       audio.removeEventListener('play', handlePlay)
       audio.removeEventListener('pause', handlePause)
+      window.removeEventListener('pointerdown', handleFirstInteraction)
+      window.removeEventListener('keydown', handleFirstInteraction)
+      window.removeEventListener('touchstart', handleFirstInteraction)
     }
-  }, [audioEnabled])
+  }, [])
 
   const toggleAudio = async () => {
     const audio = audioRef.current
@@ -60,13 +66,8 @@ export default function InvitationPage() {
       return
     }
 
-    if (!audioEnabled) {
-      setAudioEnabled(true)
-    }
-
     if (audio.paused) {
       try {
-        audio.load()
         await audio.play()
         setAutoplayBlocked(false)
       } catch {
