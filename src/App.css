@@ -268,7 +268,7 @@
 .hero-title {
   display: grid;
   gap: 0.45rem;
-  margin: 0;
+  margin: 12rem 0 0 0;
   color: #7f8f75;
   font-size: clamp(2.95rem, 10.6vw, 4.95rem);
   font-weight: 300;
@@ -294,22 +294,12 @@
 
 .intro-panel {
   min-height: 53rem;
+  background: #c2bca2;
 }
 
 .intro-stage {
   position: relative;
   min-height: inherit;
-}
-
-.panel-background {
-  position: absolute;
-  inset: 0;
-  width: 145%;
-  max-width: none;
-  height: 100%;
-  object-fit: cover;
-  object-position: right center;
-  transform: translateX(-18%) scale(1.03);
 }
 
 .intro-copy {
@@ -320,14 +310,26 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 0 2rem 4.5rem;
+  padding: 2rem 2rem 3.25rem;
   color: #fff;
   text-align: left;
 }
 
+.intro-copy__lower {
+  display: grid;
+  gap: 1.7rem;
+  width: min(100%, 21rem);
+}
+
+.intro-copy__text {
+  display: grid;
+  gap: 0.9rem;
+}
+
 .script-heading {
-  margin: 0 0 1rem;
-  color: #fff;
+  margin: 0;
+  color: #fffdf7;
+  text-shadow: 0 2px 10px rgba(54, 51, 34, 0.18);
   font-family: var(--font-script);
   font-size: clamp(4.4rem, 16vw, 6.6rem);
   font-weight: 400;
@@ -335,36 +337,199 @@
 }
 
 .intro-copy p {
-  max-width: 16rem;
+  max-width: 18rem;
   margin: 0;
-  color: #fff;
+  color: #fffaf0;
   font-size: clamp(1.2rem, 4.9vw, 1.85rem);
   font-style: italic;
-  line-height: 1.42;
+  line-height: 1.48;
+  text-shadow: 0 2px 8px rgba(54, 51, 34, 0.14);
 }
 
-.audio-button {
+.intro-flower {
+  position: absolute;
+  right: -2rem;
+  bottom: 6.4rem;
+  z-index: 0;
+  width: min(67vw, 20rem);
+  max-width: none;
+  pointer-events: none;
+}
+
+.save-date-card {
+  display: grid;
+  justify-items: start;
+  gap: 0.55rem;
+  width: min(100%, 19.25rem);
+  color: #fff8ec;
+  text-align: left;
+}
+
+.save-date-icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #f1cf82;
+  opacity: 1;
+}
+
+.save-date-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.save-date-kicker {
+  color: #f1cf82;
+  font-size: 0.74rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+.save-date-date {
+  max-width: none;
+  color: #fffdf7;
+  font-family: var(--font-script);
+  font-size: clamp(2.4rem, 8.8vw, 3.15rem);
+  font-style: normal;
+  line-height: 0.9;
+}
+
+.save-date-divider {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  margin: 0.05rem 0 0.35rem;
+}
+
+.save-date-divider img {
+  width: min(100%, 5.8rem);
+  opacity: 0.84;
+  filter: brightness(0) saturate(100%) invert(88%) sepia(33%) saturate(661%) hue-rotate(329deg) brightness(97%) contrast(92%);
+}
+
+.countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.countdown-item {
+  display: grid;
+  justify-items: start;
+  gap: 0.12rem;
+}
+
+.countdown-item strong {
+  color: #f1cf82;
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 6.8vw, 2.25rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.countdown-item span {
+  color: rgba(255, 250, 240, 0.96);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.save-date-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 7.1rem;
-  height: 7.1rem;
-  margin-top: 3.1rem;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
+  gap: 0.45rem;
+  min-width: 13.4rem;
+  margin-top: 0.8rem;
+  border: 1px solid rgba(241, 207, 130, 0.68);
+  border-radius: 999px;
+  padding: 0.82rem 1.4rem;
+  background: #f1cf82;
+  color: #5d5d43;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: transform 180ms ease, filter 180ms ease;
 }
 
-.audio-button img {
+.save-date-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.save-date-button:active {
+  transform: scale(0.98);
+}
+
+.save-date-button__icon {
+  display: inline-flex;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.save-date-button__icon svg {
   width: 100%;
   height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .audio-note {
-  margin-top: 1.5rem;
+  max-width: 18rem;
+  margin-top: 1rem;
   font-size: 1.05rem;
   letter-spacing: 0.01em;
+}
+
+.player {
+  position: fixed;
+  top: 6.25rem;
+  right: 0;
+  z-index: 2999;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 4rem;
+  height: 3.75rem;
+  padding-left: 0.4375rem;
+  background-color: #fff;
+  border-top-left-radius: 3.75rem;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 3.75rem;
+  box-shadow: 6px 6px 18px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.player .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background-color: #c2bca2;
+  border-radius: 50%;
+}
+
+.player .icon img {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
 }
 
 .ceremony-section {
@@ -609,10 +774,11 @@
 
 .dress-background {
   position: absolute;
+  top: 15% !important;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
   transform: rotate(180deg);
 }
 
@@ -719,8 +885,8 @@
 
 .hero-background,
 .hero-copy,
-.panel-background,
 .intro-copy,
+.intro-flower,
 .ceremony-sprig,
 .ceremony-image,
 .reception-flower,
@@ -742,17 +908,16 @@
   animation-delay: 0.12s;
 }
 
-.audio-button,
 .map-button {
   transition: transform 180ms ease, opacity 180ms ease, filter 180ms ease;
 }
 
-.audio-button:hover,
+.player:hover,
 .map-button:hover {
   transform: translateY(-2px);
 }
 
-.audio-button:active,
+.player:active,
 .map-button:active {
   transform: scale(0.98);
 }
@@ -770,12 +935,12 @@
 }
 
 @media (max-width: 47.99rem) {
-  .invitation-page > section {
+  .invitation-page>section {
     min-height: 90vh;
     min-height: 90svh;
   }
 
-  .invitation-page > .hero-section {
+  .invitation-page>.hero-section {
     min-height: 100vh;
     min-height: 100svh;
   }
@@ -813,11 +978,18 @@
     min-height: 56rem;
   }
 
-  .panel-background {
-    width: 132%;
-    transform: translateX(-11%) scale(1.02);
+  .save-date-card {
+    width: min(100%, 20rem);
+    padding-inline: 1.15rem;
   }
 
+  .dress-background {
+  top: 0 !important;
+  left: -25rem !important;
+  width: 100%;
+  height: 100%;
+  }
+  
   .ceremony-section,
   .gifts-section,
   .reception-section {
@@ -906,6 +1078,7 @@
 
   .hero-title {
     font-size: clamp(5.25rem, 6.4vw, 7.2rem);
+    margin: 0;
   }
 
   .hero-date {
@@ -922,22 +1095,28 @@
     margin: 0 auto;
   }
 
-  .panel-background {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center right;
-    transform: none;
-  }
-
   .intro-copy {
     max-width: 34rem;
-    padding: 0 0 5.25rem clamp(2.5rem, 5vw, 4.5rem);
+    padding: 0 0 4rem clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  .intro-flower {
+    right: -1.5rem;
+    bottom: -1rem;
+    width: min(42vw, 24rem);
+  }
+
+  .intro-copy__lower {
+    width: min(100%, 25rem);
   }
 
   .intro-copy p {
     max-width: 24rem;
     font-size: 1.8rem;
+  }
+
+  .save-date-card {
+    width: min(100%, 22rem);
   }
 
   .audio-note {
