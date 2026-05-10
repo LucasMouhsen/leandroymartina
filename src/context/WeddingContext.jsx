@@ -11,6 +11,7 @@ import { initialWeddingState } from '../data/initialState.js'
 const STORAGE_KEY = 'wedding-hub-state-v1'
 const SESSION_KEY = 'wedding-hub-session-v1'
 const STATE_VERSION = 3
+const PUBLIC_SITE_URL = 'https://lucasmouhsen.github.io/leandroymartina'
 
 const WeddingContext = createContext(null)
 
@@ -244,7 +245,18 @@ function toDataUrl(file) {
 }
 
 function buildInviteMessage(name, link) {
-  return `Hola ${name}! Queremos invitarte a nuestra boda. En este link vas a encontrar todos los detalles y vas a poder confirmar tu asistencia: ${link}. Nos haria muy felices que nos acompanes.`
+  return `\u2728 \u00a1Nos casamos! \u2728
+
+Hola ${name},
+queremos invitarte a compartir uno de los momentos mas importantes de nuestras vidas \ud83d\udc8d
+
+\ud83d\udc70\u200d\u2640\ufe0f Martina & \ud83e\udd35\u200d\u2642\ufe0f Leandro
+
+Preparamos una invitacion especial con toda la informacion del evento, confirmacion de asistencia, regalos y mas:
+
+\ud83d\udd17 ${link}
+
+Esperamos poder celebrar este dia con vos \u2764\ufe0f`
 }
 
 function validateInvitationPayload(payload, existingInvitations = []) {
@@ -501,8 +513,7 @@ export function WeddingProvider({ children }) {
   )
 
   const buildInviteLink = useCallback((token) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    return `${origin}/confirmar/${token}`
+    return `${PUBLIC_SITE_URL}/confirmar/${token}`
   }, [])
 
   const login = useCallback(async ({ email, password }) => {

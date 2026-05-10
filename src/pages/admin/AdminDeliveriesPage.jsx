@@ -25,6 +25,10 @@ async function copyText(text) {
   }
 }
 
+function normalizeWhatsAppPhone(phone) {
+  return String(phone ?? '').replace(/\D/g, '')
+}
+
 export default function AdminDeliveriesPage() {
   const {
     buildInviteLink,
@@ -38,8 +42,11 @@ export default function AdminDeliveriesPage() {
   const rows = useMemo(() => invitations, [invitations])
 
   const copyMessage = async (invitation, channel) => {
+    const contactName =
+      [invitation.primaryContactFirstName, invitation.primaryContactLastName].filter(Boolean).join(' ') ||
+      invitation.displayLabel
     const message = buildInviteMessage(
-      invitation.displayLabel,
+      contactName,
       buildInviteLink(invitation.token),
     )
 
@@ -50,6 +57,34 @@ export default function AdminDeliveriesPage() {
     } catch {
       setCopied('No se pudo copiar automaticamente. Proba en un navegador con permisos de portapapeles.')
     }
+  }
+
+  const openWhatsApp = (invitation) => {
+    const phone = normalizeWhatsAppPhone(invitation.primaryContactPhone)
+
+    if (!phone) {
+      setCopied(`La invitacion ${invitation.displayLabel} no tiene un WhatsApp cargado.`)
+      return
+    }
+
+    const contactName =
+      [invitation.primaryContactFirstName, invitation.primaryContactLastName].filter(Boolean).join(' ') ||
+      invitation.displayLabel
+    const message = buildInviteMessage(
+      contactName,
+      buildInviteLink(invitation.token),
+    ).normalize('NFC')
+    const params = new URLSearchParams({
+      phone,
+      text: message,
+      type: 'phone_number',
+      app_absent: '0',
+    })
+    const url = `https://api.whatsapp.com/send/?${params.toString()}`
+
+    window.open(url, '_blank', 'noopener,noreferrer')
+    recordDelivery(invitation.id, 'whatsapp', message)
+    setCopied(`WhatsApp preparado para ${invitation.displayLabel}.`)
   }
 
   return (
@@ -87,9 +122,9 @@ export default function AdminDeliveriesPage() {
                     <button
                       className="secondary-button"
                       type="button"
-                      onClick={() => copyMessage(invitation, 'whatsapp')}
+                      onClick={() => openWhatsApp(invitation)}
                     >
-                      Copiar WhatsApp
+                      Enviar WhatsApp
                     </button>
                   </td>
                   <td>
@@ -131,9 +166,9 @@ export default function AdminDeliveriesPage() {
                   <button
                     className="secondary-button"
                     type="button"
-                    onClick={() => copyMessage(invitation, 'whatsapp')}
+                    onClick={() => openWhatsApp(invitation)}
                   >
-                    Copiar WhatsApp
+                    Enviar WhatsApp
                   </button>
                   <button
                     className="secondary-button"

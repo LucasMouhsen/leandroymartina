@@ -2,15 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import SecondaryFooterNav from '../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../context/useWedding.jsx'
 
-const AUTOPLAY_BLOCKED_LABEL = 'Toca en cualquier parte para escuchar la musica'
 const AUDIO_START_OFFSET = 0.5
+const ENVELOPE_OPEN_DELAY_MS = 1350
+const AUDIO_ERROR_LABEL = 'No se pudo iniciar la musica. Usa el boton floral para intentarlo de nuevo.'
 const asset = (path) => `${import.meta.env.BASE_URL}${path}`
 
 export default function InvitationPage() {
   const audioRef = useRef(null)
   const userPausedRef = useRef(false)
+  const openTimerRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [autoplayBlocked, setAutoplayBlocked] = useState(false)
+  const [audioNotice, setAudioNotice] = useState('')
+  const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false)
+  const [showInvitation, setShowInvitation] = useState(false)
   const { weddingEvent } = useWedding()
 
   useEffect(() => {
@@ -33,46 +37,81 @@ export default function InvitationPage() {
     audio.addEventListener('loadedmetadata', seekToStartOffset)
     audio.addEventListener('canplay', seekToStartOffset)
 
-    const attemptAutoplay = async () => {
-      try {
-        seekToStartOffset()
-        await audio.play()
-        userPausedRef.current = false
-        setAutoplayBlocked(false)
-      } catch {
-        setIsPlaying(false)
-        setAutoplayBlocked(true)
-      }
-    }
-
-    attemptAutoplay()
-
-    const handleFirstInteraction = () => {
-      if (!audio.paused || !autoplayBlocked || userPausedRef.current) {
-        return
-      }
-
-      attemptAutoplay()
-    }
-
-    window.addEventListener('pointerdown', handleFirstInteraction, { passive: true })
-    window.addEventListener('keydown', handleFirstInteraction)
-    window.addEventListener('touchstart', handleFirstInteraction, { passive: true })
-    window.addEventListener('wheel', handleFirstInteraction, { passive: true })
-    window.addEventListener('scroll', handleFirstInteraction, { passive: true })
-
     return () => {
       audio.removeEventListener('play', handlePlay)
       audio.removeEventListener('pause', handlePause)
       audio.removeEventListener('loadedmetadata', seekToStartOffset)
       audio.removeEventListener('canplay', seekToStartOffset)
-      window.removeEventListener('pointerdown', handleFirstInteraction)
-      window.removeEventListener('keydown', handleFirstInteraction)
-      window.removeEventListener('touchstart', handleFirstInteraction)
-      window.removeEventListener('wheel', handleFirstInteraction)
-      window.removeEventListener('scroll', handleFirstInteraction)
     }
-  }, [autoplayBlocked])
+  }, [])
+
+  useEffect(() => {
+    if (showInvitation) {
+      return undefined
+    }
+
+    const { overflow } = document.body.style
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = overflow
+    }
+  }, [showInvitation])
+
+  useEffect(() => (
+    () => {
+      if (openTimerRef.current) {
+        window.clearTimeout(openTimerRef.current)
+      }
+    }
+  ), [])
+
+  const startAudio = async () => {
+    const audio = audioRef.current
+
+    if (!audio) {
+      return false
+    }
+
+    try {
+      if (audio.currentTime < AUDIO_START_OFFSET) {
+        audio.currentTime = AUDIO_START_OFFSET
+      }
+
+      await audio.play()
+      userPausedRef.current = false
+      setAudioNotice('')
+      return true
+    } catch {
+      setIsPlaying(false)
+      setAudioNotice(AUDIO_ERROR_LABEL)
+      return false
+    }
+  }
+
+  const handleOpenEnvelope = async () => {
+    if (isEnvelopeOpen) {
+      return
+    }
+
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+
+    setIsEnvelopeOpen(true)
+    await startAudio()
+
+    openTimerRef.current = window.setTimeout(() => {
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      setShowInvitation(true)
+    }, ENVELOPE_OPEN_DELAY_MS)
+  }
 
   const toggleAudio = async () => {
     const audio = audioRef.current
@@ -82,27 +121,17 @@ export default function InvitationPage() {
     }
 
     if (audio.paused) {
-      try {
-        if (audio.currentTime < AUDIO_START_OFFSET) {
-          audio.currentTime = AUDIO_START_OFFSET
-        }
-        await audio.play()
-        userPausedRef.current = false
-        setAutoplayBlocked(false)
-      } catch {
-        setIsPlaying(false)
-        setAutoplayBlocked(true)
-      }
+      await startAudio()
       return
     }
 
     userPausedRef.current = true
-    setAutoplayBlocked(false)
+    setAudioNotice('')
     audio.pause()
   }
 
   return (
-    <div className="site-shell">
+    <div className="site-shell invitation-shell">
       <audio
         ref={audioRef}
         src={asset('assets/original/bg-audio.m4a')}
@@ -111,7 +140,39 @@ export default function InvitationPage() {
         preload="none"
       />
 
-      <main className="invitation-page">
+      <section
+        className={`envelope-screen${isEnvelopeOpen ? ' envelope-screen--opening' : ''}${showInvitation ? ' envelope-screen--hidden' : ''}`}
+        aria-label="Abrir invitacion"
+      >
+        <div className="envelope-frame">
+          <div className="envelope-card">
+            <div className="envelope-card__paper" aria-hidden="true" />
+            <div className="envelope-card__back" aria-hidden="true" />
+            <div className="envelope-card__flap" aria-hidden="true" />
+            <div className="envelope-card__fold envelope-card__fold--left" aria-hidden="true" />
+            <div className="envelope-card__fold envelope-card__fold--right" aria-hidden="true" />
+            <div className="envelope-card__bottom" aria-hidden="true" />
+
+            <button
+              className="envelope-seal"
+              type="button"
+              onClick={handleOpenEnvelope}
+              disabled={isEnvelopeOpen}
+              aria-label="Abrir sobre"
+            >
+              <span className="envelope-seal__initials">
+                <span className="envelope-seal__letter">L</span>
+                <span className="envelope-seal__ampersand">&amp;</span>
+                <span className="envelope-seal__letter">M</span>
+              </span>
+              <span className="envelope-seal__open">ABRIR</span>
+            </button>
+          </div>
+        </div>
+        {audioNotice ? <p className="envelope-screen__note">{audioNotice}</p> : null}
+      </section>
+
+      <main className={`invitation-page${isEnvelopeOpen || showInvitation ? ' invitation-page--visible' : ''}`}>
         <section className="hero-section">
           <div className="hero-stage">
             <img
@@ -157,6 +218,7 @@ export default function InvitationPage() {
                 className="audio-button"
                 type="button"
                 onClick={toggleAudio}
+                aria-label={isPlaying ? 'Pausar musica' : 'Reproducir musica'}
               >
                 <img
                   src={asset('assets/optimized/candidate-mahg9.webp')}
@@ -167,8 +229,8 @@ export default function InvitationPage() {
                 />
               </button>
 
-              {autoplayBlocked && !isPlaying ? (
-                <p className="audio-note">{AUTOPLAY_BLOCKED_LABEL}</p>
+              {audioNotice ? (
+                <p className="audio-note">{audioNotice}</p>
               ) : null}
             </div>
           </div>

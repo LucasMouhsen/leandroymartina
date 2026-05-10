@@ -3,10 +3,221 @@
   padding: 0;
 }
 
+.invitation-shell {
+  background: #2f2f2f;
+  position: relative;
+}
+
 .invitation-page {
-  width: min(100%, 48rem);
+  width: 100%;
+  max-width: 48rem;
   margin: 0 auto;
   background: #fff;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.invitation-page--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.envelope-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100svh;
+  place-items: center;
+  gap: 1rem;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  transition: background-color 0.45s ease, opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.envelope-screen--opening {
+  background: transparent;
+}
+
+.envelope-screen--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.envelope-frame {
+  width: 100vw;
+  height: 100svh;
+}
+
+.envelope-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  background: #fcfbf9;
+  box-shadow:
+    inset 0 0 0 1px rgba(241, 239, 234, 0.98);
+  transition: box-shadow 0.5s ease, background-color 0.5s ease;
+}
+
+.envelope-card__paper {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #fcfbf9;
+  box-shadow: inset 0 0 0 1px rgba(244, 242, 238, 0.98);
+  transition: opacity 0.35s ease;
+}
+
+.envelope-card__back,
+.envelope-card__bottom,
+.envelope-card__fold {
+  position: absolute;
+  background: #fcfbf8;
+}
+
+.envelope-card__back {
+  inset: 0;
+  background: transparent;
+}
+
+.envelope-card__flap {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 43.25%;
+  background: url('/assets/reference-envelope-top.png') center top / 100% 100% no-repeat;
+  transform-origin: top center;
+  box-shadow: none;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.9s ease;
+  z-index: 4;
+}
+
+.envelope-card__fold {
+  display: none;
+}
+
+.envelope-card__fold--left {
+  left: 0;
+}
+
+.envelope-card__fold--right {
+  right: 0;
+}
+
+.envelope-card__bottom {
+  inset: 0;
+  background: url('/assets/reference-envelope-bottom.png') center bottom / 100% 100% no-repeat;
+  z-index: 3;
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+}
+
+.envelope-seal {
+  position: absolute;
+  top: 33.1%;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 5.95rem;
+  height: 5.95rem;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: #c2bca2;
+  color: #fff;
+  box-shadow:
+    0 0.7rem 1.4rem rgba(171, 138, 73, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease;
+}
+
+.envelope-seal:hover {
+  transform: translate(-50%, -51.5%);
+  box-shadow:
+    0 0.9rem 1.7rem rgba(171, 138, 73, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.envelope-seal:active {
+  transform: translate(-50%, -49%) scale(0.98);
+}
+
+.envelope-seal:disabled {
+  cursor: default;
+}
+
+.envelope-seal__initials {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.24rem;
+  font-family: var(--font-display);
+  font-size: 1.95rem;
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+}
+
+.envelope-seal__letter {
+  line-height: 0.9;
+}
+
+.envelope-seal__ampersand {
+  position: relative;
+  bottom: 0.12rem;
+  font-size: 0.66em;
+  line-height: 1;
+}
+
+.envelope-seal__open {
+  font-size: 0.71rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.envelope-screen__note {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 6;
+  width: min(90vw, 22rem);
+  margin: 0;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #9c755d;
+  font-size: 0.95rem;
+}
+
+.envelope-screen--opening .envelope-card__flap {
+  transform: translateY(-100%);
+  box-shadow: none;
+}
+
+.envelope-screen--opening .envelope-card__paper {
+  opacity: 0;
+}
+
+.envelope-screen--opening .envelope-card__bottom {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.envelope-screen--opening .envelope-card {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.envelope-screen--opening .envelope-seal {
+  opacity: 0;
+  transform: translate(-50%, -55%) scale(0.92);
 }
 
 .hero-section,
@@ -24,7 +235,8 @@
 }
 
 .hero-section {
-  min-height: 44.5rem;
+  min-height: 100vh;
+  min-height: 100svh;
   overflow: hidden;
 }
 
@@ -562,11 +774,25 @@
     min-height: 90vh;
     min-height: 90svh;
   }
+
+  .invitation-page > .hero-section {
+    min-height: 100vh;
+    min-height: 100svh;
+  }
 }
 
 @media (min-width: 48rem) {
   .site-shell {
     padding: 2rem 1rem 4rem;
+  }
+
+  .envelope-screen {
+    padding: 0;
+  }
+
+  .envelope-frame {
+    width: 100vw;
+    height: 100svh;
   }
 
   .invitation-page {
@@ -636,6 +862,16 @@
 @media (min-width: 80rem) {
   .site-shell {
     padding: 0 0 4rem;
+  }
+
+  .envelope-screen {
+    min-height: min(100svh, 64rem);
+    padding: 0;
+  }
+
+  .envelope-frame {
+    width: 100vw;
+    height: 100svh;
   }
 
   .invitation-page {
@@ -876,5 +1112,24 @@
   .rsvp-copy h2 {
     max-width: 22rem;
     font-size: clamp(4.3rem, 5vw, 5.8rem);
+  }
+}
+
+@media (max-width: 30rem) {
+  .envelope-frame {
+    width: 100vw;
+  }
+
+  .envelope-seal {
+    width: 5.8rem;
+    height: 5.8rem;
+  }
+
+  .envelope-seal__initials {
+    font-size: 1.7rem;
+  }
+
+  .envelope-seal__open {
+    letter-spacing: 0.18em;
   }
 }

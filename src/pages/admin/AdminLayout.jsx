@@ -31,7 +31,7 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <button className="secondary-button" type="button" onClick={logout}>
+        <button className="secondary-button admin-sidebar__logout" type="button" onClick={logout}>
           Cerrar sesion
         </button>
       </aside>
