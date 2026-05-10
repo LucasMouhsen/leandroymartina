@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@300;400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
 
 :root {
   --font-serif: 'Cormorant Garamond', serif;
   --font-script: 'Allura', cursive;
-  --font-sans: 'Manrope', sans-serif;
+  --font-sans: 'Cormorant Garamond', serif;
   font-family: var(--font-serif);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
