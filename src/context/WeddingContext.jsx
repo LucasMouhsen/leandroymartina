@@ -513,7 +513,7 @@ export function WeddingProvider({ children }) {
   )
 
   const buildInviteLink = useCallback((token) => {
-    return `${PUBLIC_SITE_URL}/confirmar/${token}`
+    return `${PUBLIC_SITE_URL}/#/confirmar/${token}`
   }, [])
 
   const login = useCallback(async ({ email, password }) => {
