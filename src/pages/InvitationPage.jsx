@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import SecondaryFooterNav from '../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../context/useWedding.jsx'
@@ -7,35 +7,6 @@ const AUDIO_START_OFFSET = 0.5
 const ENVELOPE_OPEN_DELAY_MS = 1350
 const AUDIO_ERROR_LABEL = 'No se pudo iniciar la musica. Usa el boton floral para intentarlo de nuevo.'
 const asset = (path) => `${import.meta.env.BASE_URL}${path}`
-const COUNTDOWN_PARTS = [
-  { key: 'days', label: 'DIAS' },
-  { key: 'hours', label: 'HS' },
-  { key: 'minutes', label: 'MIN' },
-  { key: 'seconds', label: 'SEG' },
-]
-
-function getCountdownParts(targetDate) {
-  const distance = Math.max(targetDate.getTime() - Date.now(), 0)
-  const totalSeconds = Math.floor(distance / 1000)
-  const days = Math.floor(totalSeconds / 86400)
-  const hours = Math.floor((totalSeconds % 86400) / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  return {
-    days: String(days).padStart(3, '0'),
-    hours: String(hours).padStart(2, '0'),
-    minutes: String(minutes).padStart(2, '0'),
-    seconds: String(seconds).padStart(2, '0'),
-  }
-}
-
-function formatGoogleCalendarDate(value) {
-  return value
-    .toISOString()
-    .replace(/[-:]/g, '')
-    .replace(/\.\d{3}Z$/, 'Z')
-}
 
 export default function InvitationPage() {
   const { token } = useParams()
@@ -50,11 +21,6 @@ export default function InvitationPage() {
   const invitation = token ? getInvitationByToken(token) : null
   const isPersonalInvitation = Boolean(token && invitation)
   const isInvalidPersonalInvitation = Boolean(token && !invitation)
-  const countdownTarget = useMemo(
-    () => new Date(weddingEvent.countdownTarget),
-    [weddingEvent.countdownTarget],
-  )
-  const [countdownParts, setCountdownParts] = useState(() => getCountdownParts(countdownTarget))
 
   useEffect(() => {
     const audio = audioRef.current
@@ -104,29 +70,6 @@ export default function InvitationPage() {
       }
     }
   ), [])
-
-  useEffect(() => {
-    const updateCountdown = () => {
-      setCountdownParts(getCountdownParts(countdownTarget))
-    }
-
-    const timeoutId = window.setTimeout(updateCountdown, 0)
-    const intervalId = window.setInterval(updateCountdown, 1000)
-
-    return () => {
-      window.clearTimeout(timeoutId)
-      window.clearInterval(intervalId)
-    }
-  }, [countdownTarget])
-
-  const calendarStart = formatGoogleCalendarDate(countdownTarget)
-  const calendarEnd = formatGoogleCalendarDate(new Date(countdownTarget.getTime() + 4 * 60 * 60 * 1000))
-  const calendarUrl = new URL('https://calendar.google.com/calendar/render')
-  calendarUrl.searchParams.set('action', 'TEMPLATE')
-  calendarUrl.searchParams.set('text', `${weddingEvent.couple} - Casamiento`)
-  calendarUrl.searchParams.set('dates', `${calendarStart}/${calendarEnd}`)
-  calendarUrl.searchParams.set('details', 'Reserva la fecha para celebrar con nosotros.')
-  calendarUrl.searchParams.set('location', weddingEvent.location)
 
   const startAudio = async () => {
     const audio = audioRef.current
@@ -318,48 +261,6 @@ export default function InvitationPage() {
                   </p>
                 </div>
 
-                <div className="save-date-card">
-                  <div className="save-date-icon" aria-hidden="true">
-                    <svg viewBox="0 0 64 64" role="presentation">
-                      <rect x="14" y="18" width="36" height="30" rx="2.5" />
-                      <path d="M14 26h36" />
-                      <path d="M22 14v8" />
-                      <path d="M42 14v8" />
-                      <path d="M34.4 35.5c0-2.5-2-4.6-4.6-4.6-1.6 0-2.9.8-3.8 2-0.9-1.2-2.3-2-3.8-2-2.5 0-4.6 2-4.6 4.6 0 5.6 8.4 9.9 8.4 9.9s8.4-4.3 8.4-9.9Z" />
-                    </svg>
-                  </div>
-                  <span className="save-date-kicker">AGENDA LA FECHA</span>
-                  <p className="save-date-date">{weddingEvent.date}</p>
-                  <div className="save-date-divider" aria-hidden="true">
-                    <img src={asset('assets/original/divider-dark.svg')} alt="" />
-                  </div>
-
-                  <div className="countdown-grid" aria-label="Cuenta regresiva al casamiento">
-                    {COUNTDOWN_PARTS.map(({ key, label }) => (
-                      <div className="countdown-item" key={key}>
-                        <strong>{countdownParts[key]}</strong>
-                        <span>{label}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <a
-                    className="save-date-button"
-                    href={calendarUrl.toString()}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span className="save-date-button__icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" role="presentation">
-                        <rect x="4.5" y="6.5" width="15" height="13" rx="2" />
-                        <path d="M4.5 10.5h15" />
-                        <path d="M8 4.5v4" />
-                        <path d="M16 4.5v4" />
-                      </svg>
-                    </span>
-                    AGENDAR FECHA
-                  </a>
-                </div>
               </div>
 
               {audioNotice ? (
