@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -100,6 +100,8 @@ export default function GiftsPage() {
   const [category, setCategory] = useState('all')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
+  const closeButtonRef = useRef(null)
+  const lastFocusedElementRef = useRef(null)
 
   const publicGiftItems = useMemo(
     () => [...giftItems.map((gift) => ({ ...gift, category: classifyGift(gift.name) })), freeContributionCard],
@@ -169,17 +171,46 @@ export default function GiftsPage() {
     },
   })
 
+  const closeModal = () => {
+    setSelectedGiftId(null)
+    setStatus(null)
+    setProofFile(null)
+  }
+
   useEffect(() => {
     if (!selectedGift) {
       return undefined
     }
 
+    lastFocusedElementRef.current = document.activeElement
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    const focusTimer = window.setTimeout(() => closeButtonRef.current?.focus(), 0)
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setSelectedGiftId(null)
+        closeModal()
+        return
+      }
+
+      if (event.key === 'Tab') {
+        const focusable = Array.from(document.querySelectorAll('.gift-modal__panel button, .gift-modal__panel input, .gift-modal__panel textarea, .gift-modal__panel select'))
+          .filter((element) => !element.disabled)
+
+        if (!focusable.length) {
+          return
+        }
+
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
       }
     }
 
@@ -188,14 +219,10 @@ export default function GiftsPage() {
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', onKeyDown)
+      window.clearTimeout(focusTimer)
+      lastFocusedElementRef.current?.focus?.()
     }
   }, [selectedGift])
-
-  const closeModal = () => {
-    setSelectedGiftId(null)
-    setStatus(null)
-    setProofFile(null)
-  }
 
   const goToPage = (page) => {
     setCurrentPage(page)
@@ -471,9 +498,9 @@ export default function GiftsPage() {
 
       {selectedGift ? (
         <div className="gift-modal" role="dialog" aria-modal="true" aria-labelledby="gift-modal-title">
-          <div className="gift-modal__backdrop" onClick={closeModal} />
+          <button type="button" className="gift-modal__backdrop" onClick={closeModal} aria-label="Cerrar modal de regalo" />
           <div className="gift-modal__panel">
-            <button type="button" className="gift-modal__close" onClick={closeModal} aria-label="Cerrar">
+            <button ref={closeButtonRef} type="button" className="gift-modal__close" onClick={closeModal} aria-label="Cerrar">
               ×
             </button>
 
@@ -499,12 +526,12 @@ export default function GiftsPage() {
                 <div className="form-grid two-columns">
                   <label>
                     Tu nombre
-                    <input {...form.register('guestName')} />
+                    <input autoComplete="name" {...form.register('guestName')} />
                     <span>{form.formState.errors.guestName?.message}</span>
                   </label>
                   <label>
                     Contacto
-                    <input placeholder="Email o WhatsApp" {...form.register('guestContact')} />
+                    <input autoComplete="email" placeholder="Email o WhatsApp…" {...form.register('guestContact')} />
                     <span>{form.formState.errors.guestContact?.message}</span>
                   </label>
                 </div>
@@ -512,7 +539,7 @@ export default function GiftsPage() {
                 {isFreeContribution ? (
                   <label>
                     Monto del aporte
-                    <input type="number" min="1" {...form.register('amount', { valueAsNumber: true })} />
+                    <input type="number" min="1" inputMode="numeric" {...form.register('amount', { valueAsNumber: true })} />
                     <span>{form.formState.errors.amount?.message}</span>
                   </label>
                 ) : (
@@ -524,7 +551,7 @@ export default function GiftsPage() {
 
                 <label>
                   Dedicatoria o mensaje
-                  <textarea rows="4" {...form.register('notes')} />
+                  <textarea rows="4" autoComplete="off" {...form.register('notes')} />
                 </label>
 
                 <label className="file-field">
@@ -541,7 +568,7 @@ export default function GiftsPage() {
                   Ya pague este regalo
                 </button>
 
-                {status ? <p className="form-feedback">{status}</p> : null}
+                <p className="form-feedback" role="status" aria-live="polite">{status ?? ''}</p>
               </form>
           </div>
         </div>

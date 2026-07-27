@@ -1,9 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
+@font-face {
+  font-family: 'Canva Invitation Serif';
+  src: url('/assets/fonts/canva-serif.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Canva Invitation Script';
+  src: url('/assets/fonts/canva-script.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Canva Invitation Label';
+  src: url('/assets/fonts/canva-label.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
 
 :root {
-  --font-serif: 'Cormorant Garamond', serif;
-  --font-script: 'Allura', cursive;
-  --font-sans: 'Cormorant Garamond', serif;
+  --font-serif: 'Canva Invitation Serif', serif;
+  --font-script: 'Canva Invitation Script', cursive;
+  --font-sans: 'Canva Invitation Serif', serif;
+  --font-label: 'Canva Invitation Label', sans-serif;
   font-family: var(--font-serif);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -30,6 +53,16 @@ body {
 button,
 a {
   font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #e8d6a5;
+  outline-offset: 3px;
 }
 
 img {

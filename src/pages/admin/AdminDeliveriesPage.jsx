@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useWedding } from '../../context/useWedding.jsx'
 
+const HISTORY_FILTERS = [
+  { id: 'all', label: 'Todo' },
+  { id: 'needs_attention', label: 'Por confirmar' },
+  { id: 'confirmed', label: 'Confirmados' },
+  { id: 'prepared', label: 'Preparados' },
+]
+
 async function copyText(text) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text)
@@ -16,7 +23,6 @@ async function copyText(text) {
   document.body.appendChild(textarea)
   textarea.focus()
   textarea.select()
-
   const successful = document.execCommand('copy')
   document.body.removeChild(textarea)
 
@@ -29,33 +35,157 @@ function normalizeWhatsAppPhone(phone) {
   return String(phone ?? '').replace(/\D/g, '')
 }
 
+function contactName(invitation) {
+  return [invitation.primaryContactFirstName, invitation.primaryContactLastName]
+    .filter(Boolean)
+    .join(' ') || invitation.displayLabel
+}
+
+function formatDate(value) {
+  return new Intl.DateTimeFormat('es-AR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+function getDeliveryMeta(delivery) {
+  if (delivery.status === 'sent_manual') {
+    return {
+      title: 'Envio confirmado',
+      detail: 'El envio fue confirmado manualmente desde el panel.',
+      tone: 'confirmed',
+      filter: 'confirmed',
+      needsConfirmation: false,
+    }
+  }
+
+  if (delivery.type === 'whatsapp_composer_opened') {
+    return {
+      title: 'WhatsApp preparado',
+      detail: 'Se abrio el compositor de WhatsApp. Falta confirmar que el mensaje fue enviado.',
+      tone: 'attention',
+      filter: 'needs_attention',
+      needsConfirmation: true,
+    }
+  }
+
+  if (delivery.type === 'email_copied') {
+    return {
+      title: 'Email copiado',
+      detail: 'El mensaje fue copiado. Falta enviarlo desde tu correo y confirmarlo aqui.',
+      tone: 'attention',
+      filter: 'needs_attention',
+      needsConfirmation: true,
+    }
+  }
+
+  if (delivery.type === 'link_copied') {
+    return {
+      title: 'Link copiado',
+      detail: 'El link fue copiado para compartirlo por otro canal.',
+      tone: 'prepared',
+      filter: 'prepared',
+      needsConfirmation: false,
+    }
+  }
+
+  return {
+    title: 'Registro anterior',
+    detail: 'Registro importado de la version anterior. Revisa manualmente si el envio se concreto.',
+    tone: 'attention',
+    filter: 'needs_attention',
+    needsConfirmation: delivery.channel !== 'link',
+  }
+}
+
 export default function AdminDeliveriesPage() {
   const {
     buildInviteLink,
     buildInviteMessage,
+    buildRsvpLink,
+    confirmDelivery,
     invitations,
     inviteDeliveries,
     recordDelivery,
+    regenerateInvitationToken,
+    setInvitationAccess,
   } = useWedding()
-  const [copied, setCopied] = useState('')
+  const [feedback, setFeedback] = useState('')
+  const [historyFilter, setHistoryFilter] = useState('all')
 
-  const rows = useMemo(() => invitations, [invitations])
+  const history = useMemo(
+    () => [...inviteDeliveries]
+      .map((delivery) => ({
+        ...delivery,
+        createdAt: delivery.createdAt ?? delivery.sentAt,
+        meta: getDeliveryMeta(delivery),
+      }))
+      .sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt)),
+    [inviteDeliveries],
+  )
 
-  const copyMessage = async (invitation, channel) => {
-    const contactName =
-      [invitation.primaryContactFirstName, invitation.primaryContactLastName].filter(Boolean).join(' ') ||
-      invitation.displayLabel
-    const message = buildInviteMessage(
-      contactName,
-      buildInviteLink(invitation.token),
-    )
+  const summary = useMemo(() => ({
+    all: history.length,
+    needs_attention: history.filter((delivery) => delivery.meta.filter === 'needs_attention').length,
+    confirmed: history.filter((delivery) => delivery.meta.filter === 'confirmed').length,
+    prepared: history.filter((delivery) => delivery.meta.filter === 'prepared').length,
+  }), [history])
+
+  const visibleHistory = useMemo(
+    () => historyFilter === 'all'
+      ? history
+      : history.filter((delivery) => delivery.meta.filter === historyFilter),
+    [history, historyFilter],
+  )
+
+  const pendingDeliveryByInvitation = useMemo(() => {
+    const pending = new Map()
+    history.forEach((delivery) => {
+      if (delivery.meta.needsConfirmation && !pending.has(delivery.invitationId)) {
+        pending.set(delivery.invitationId, delivery)
+      }
+    })
+    return pending
+  }, [history])
+
+  const recordPreparation = (invitation, payload) => recordDelivery(invitation.id, {
+    ...payload,
+    inviteLink: buildInviteLink(invitation.token),
+  })
+
+  const copyLink = async (invitation, kind = 'invitation') => {
+    const link = kind === 'rsvp' ? buildRsvpLink(invitation.token) : buildInviteLink(invitation.token)
+
+    try {
+      await copyText(link)
+      recordPreparation(invitation, {
+        channel: 'link',
+        type: 'link_copied',
+        status: 'prepared',
+        recipient: contactName(invitation),
+        message: kind === 'rsvp' ? 'Link directo de RSVP copiado.' : 'Link de invitacion copiado.',
+      })
+      setFeedback(`Link ${kind === 'rsvp' ? 'directo de RSVP' : 'de invitacion'} copiado para ${invitation.displayLabel}.`)
+    } catch {
+      setFeedback('No se pudo copiar automaticamente. Proba en un navegador con permisos de portapapeles.')
+    }
+  }
+
+  const copyEmailMessage = async (invitation) => {
+    const message = buildInviteMessage(contactName(invitation), buildInviteLink(invitation.token))
 
     try {
       await copyText(message)
-      recordDelivery(invitation.id, channel, message)
-      setCopied(`Mensaje copiado para ${invitation.displayLabel}.`)
+      recordPreparation(invitation, {
+        channel: 'email',
+        type: 'email_copied',
+        status: 'prepared',
+        recipient: invitation.primaryContactEmail || contactName(invitation),
+        message,
+      })
+      setFeedback(`Mensaje de email copiado para ${invitation.displayLabel}. Confirma el envio cuando lo hayas enviado desde tu correo.`)
     } catch {
-      setCopied('No se pudo copiar automaticamente. Proba en un navegador con permisos de portapapeles.')
+      setFeedback('No se pudo copiar automaticamente. Proba en un navegador con permisos de portapapeles.')
     }
   }
 
@@ -63,38 +193,81 @@ export default function AdminDeliveriesPage() {
     const phone = normalizeWhatsAppPhone(invitation.primaryContactPhone)
 
     if (!phone) {
-      setCopied(`La invitacion ${invitation.displayLabel} no tiene un WhatsApp cargado.`)
+      setFeedback(`La invitacion ${invitation.displayLabel} no tiene un WhatsApp cargado.`)
       return
     }
 
-    const contactName =
-      [invitation.primaryContactFirstName, invitation.primaryContactLastName].filter(Boolean).join(' ') ||
-      invitation.displayLabel
-    const message = buildInviteMessage(
-      contactName,
-      buildInviteLink(invitation.token),
-    ).normalize('NFC')
-    const params = new URLSearchParams({
-      phone,
-      text: message,
-      type: 'phone_number',
-      app_absent: '0',
+    const message = buildInviteMessage(contactName(invitation), buildInviteLink(invitation.token)).normalize('NFC')
+    const params = new URLSearchParams({ phone, text: message, type: 'phone_number', app_absent: '0' })
+    window.open(`https://api.whatsapp.com/send/?${params.toString()}`, '_blank', 'noopener,noreferrer')
+    recordPreparation(invitation, {
+      channel: 'whatsapp',
+      type: 'whatsapp_composer_opened',
+      status: 'prepared',
+      recipient: phone,
+      message,
     })
-    const url = `https://api.whatsapp.com/send/?${params.toString()}`
-
-    window.open(url, '_blank', 'noopener,noreferrer')
-    recordDelivery(invitation.id, 'whatsapp', message)
-    setCopied(`WhatsApp preparado para ${invitation.displayLabel}.`)
+    setFeedback(`WhatsApp preparado para ${invitation.displayLabel}. Confirma el envio despues de mandarlo.`)
   }
 
-  return (
-    <section className="admin-panel">
-      <header className="admin-panel__header">
+  const handleConfirmDelivery = (delivery) => {
+    confirmDelivery(delivery.id)
+    setFeedback(`Envio por ${delivery.channel} confirmado manualmente para ${delivery.recipient || 'el contacto principal'}.`)
+  }
+
+  const toggleInvitationAccess = (invitation) => {
+    const nextStatus = invitation.accessStatus === 'paused' ? 'active' : 'paused'
+    const action = nextStatus === 'paused' ? 'pausar' : 'reactivar'
+
+    if (!window.confirm(`Vas a ${action} el enlace de ${invitation.displayLabel}.`)) {
+      return
+    }
+
+    setInvitationAccess(invitation.id, nextStatus)
+    setFeedback(`Enlace ${nextStatus === 'paused' ? 'pausado' : 'reactivado'} para ${invitation.displayLabel}.`)
+  }
+
+  const regenerateLink = (invitation) => {
+    if (!window.confirm(`Vas a invalidar el enlace actual de ${invitation.displayLabel} y crear uno nuevo.`)) {
+      return
+    }
+
+    regenerateInvitationToken(invitation.id)
+    setFeedback(`Enlace regenerado para ${invitation.displayLabel}. Copia el nuevo link antes de reenviarlo.`)
+  }
+
+  const renderActions = (invitation) => (
+    <div className="delivery-actions">
+      <button className="secondary-button" type="button" onClick={() => openWhatsApp(invitation)}>
+        Preparar WhatsApp
+      </button>
+      <button className="secondary-button" type="button" onClick={() => copyEmailMessage(invitation)}>
+        Copiar email
+      </button>
+      <button className="secondary-button" type="button" onClick={() => copyLink(invitation)}>
+        Copiar invitacion
+      </button>
+      <button className="secondary-button" type="button" onClick={() => copyLink(invitation, 'rsvp')}>
+        Copiar RSVP
+      </button>
+      <button className="secondary-button" type="button" onClick={() => toggleInvitationAccess(invitation)}>
+        {invitation.accessStatus === 'paused' ? 'Reactivar link' : 'Pausar link'}
+      </button>
+      <button className="secondary-button" type="button" onClick={() => regenerateLink(invitation)}>
+        Regenerar link
+      </button>
+    </div>
+  )
+
+  const managementContent = (
+    <section className="delivery-management" aria-labelledby="delivery-management-title">
+      <div className="delivery-management__header">
         <div>
-          <p className="feature-kicker">Envios</p>
-          <h2>Links personalizados y recordatorios</h2>
+          <p className="feature-kicker">Acciones</p>
+          <h3 id="delivery-management-title">Administrar invitaciones</h3>
         </div>
-      </header>
+        <p>Los links se pueden pausar o regenerar sin alterar las respuestas ya registradas.</p>
+      </div>
 
       <div className="table-card admin-table-desktop">
         <table>
@@ -102,40 +275,21 @@ export default function AdminDeliveriesPage() {
             <tr>
               <th>Invitacion</th>
               <th>Contacto</th>
-              <th>Link</th>
-              <th>WhatsApp</th>
-              <th>Email</th>
+              <th>Acceso</th>
+              <th>Envio</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((invitation) => {
-              const contactName = [invitation.primaryContactFirstName, invitation.primaryContactLastName]
-                .filter(Boolean)
-                .join(' ')
-
+            {invitations.map((invitation) => {
+              const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
               return (
                 <tr key={invitation.id}>
-                  <td>{invitation.displayLabel}</td>
-                  <td>{contactName || '-'}</td>
-                  <td><code>{buildInviteLink(invitation.token)}</code></td>
-                  <td>
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={() => openWhatsApp(invitation)}
-                    >
-                      Enviar WhatsApp
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={() => copyMessage(invitation, 'email')}
-                    >
-                      Copiar email
-                    </button>
-                  </td>
+                  <td><strong>{invitation.displayLabel}</strong></td>
+                  <td>{invitation.primaryContactPhone || invitation.primaryContactEmail || '-'}</td>
+                  <td>{invitation.accessStatus === 'paused' ? 'Pausado' : 'Activo'}</td>
+                  <td>{pendingDelivery ? 'Requiere confirmacion' : invitation.deliveryStatus}</td>
+                  <td>{renderActions(invitation)}</td>
                 </tr>
               )
             })}
@@ -145,67 +299,121 @@ export default function AdminDeliveriesPage() {
 
       <div className="admin-table-mobile">
         <div className="admin-mobile-list">
-          {rows.map((invitation) => {
-            const contactName = [invitation.primaryContactFirstName, invitation.primaryContactLastName]
-              .filter(Boolean)
-              .join(' ')
-
+          {invitations.map((invitation) => {
+            const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
             return (
               <article className="admin-mobile-card" key={invitation.id}>
                 <div className="admin-mobile-card__header">
                   <p className="admin-mobile-card__title">{invitation.displayLabel}</p>
-                  <code>{buildInviteLink(invitation.token)}</code>
                 </div>
-
                 <div className="admin-mobile-card__row">
                   <span>Contacto</span>
-                  <strong>{contactName || '-'}</strong>
+                  <strong>{invitation.primaryContactPhone || invitation.primaryContactEmail || '-'}</strong>
                 </div>
-
-                <div className="admin-mobile-card__actions">
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() => openWhatsApp(invitation)}
-                  >
-                    Enviar WhatsApp
-                  </button>
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() => copyMessage(invitation, 'email')}
-                  >
-                    Copiar email
-                  </button>
+                <div className="admin-mobile-card__row">
+                  <span>Acceso</span>
+                  <strong>{invitation.accessStatus === 'paused' ? 'Pausado' : 'Activo'}</strong>
                 </div>
+                <div className="admin-mobile-card__row">
+                  <span>Envio</span>
+                  <strong>{pendingDelivery ? 'Requiere confirmacion' : invitation.deliveryStatus}</strong>
+                </div>
+                {renderActions(invitation)}
               </article>
             )
           })}
         </div>
       </div>
+    </section>
+  )
 
-      {copied ? <p className="form-feedback">{copied}</p> : null}
-
-      <article className="panel-card">
-        <div className="list-card__header">
-          <h3>Historial de envios</h3>
-          <span>{inviteDeliveries.length} registros</span>
+  return (
+    <section className="admin-panel delivery-panel">
+      <header className="admin-panel__header delivery-panel__header">
+        <div>
+          <p className="feature-kicker">Envios</p>
+          <h2>Seguimiento de invitaciones</h2>
+          <p className="feature-lead">
+            Confirma solo los mensajes que ya enviaste. Lo preparado y lo confirmado quedan separados.
+          </p>
         </div>
-        <div className="stack-list">
-          {inviteDeliveries.map((delivery) => {
+      </header>
+
+      {managementContent}
+
+      <section className="delivery-summary" aria-label="Resumen del historial">
+        {HISTORY_FILTERS.map((filter) => (
+          <button
+            className={`delivery-summary__item${historyFilter === filter.id ? ' is-active' : ''}${filter.id === 'needs_attention' && summary[filter.id] ? ' is-attention' : ''}`}
+            type="button"
+            key={filter.id}
+            onClick={() => setHistoryFilter(filter.id)}
+            aria-pressed={historyFilter === filter.id}
+          >
+            <span>{filter.label}</span>
+            <strong>{summary[filter.id]}</strong>
+          </button>
+        ))}
+      </section>
+
+      <section className="delivery-history" aria-labelledby="delivery-history-title">
+        <div className="delivery-history__header">
+          <div>
+            <p className="feature-kicker">Historial</p>
+            <h3 id="delivery-history-title">
+              {historyFilter === 'all' ? 'Toda la actividad' : HISTORY_FILTERS.find((filter) => filter.id === historyFilter)?.label}
+            </h3>
+          </div>
+          <p>{visibleHistory.length} {visibleHistory.length === 1 ? 'registro' : 'registros'}</p>
+        </div>
+
+        <div className="delivery-timeline">
+          {visibleHistory.length ? visibleHistory.map((delivery) => {
             const invitation = invitations.find((item) => item.id === delivery.invitationId)
+
             return (
-              <div className="stack-row" key={delivery.id}>
-                <div>
-                  <strong>{invitation?.displayLabel ?? 'Invitacion'}</strong>
-                  <p>{delivery.channel}</p>
+              <article className={`delivery-event delivery-event--${delivery.meta.tone}`} key={delivery.id}>
+                <span className="delivery-event__marker" aria-hidden="true" />
+                <div className="delivery-event__content">
+                  <div className="delivery-event__topline">
+                    <div>
+                      <p className="delivery-event__eyebrow">{delivery.meta.title}</p>
+                      <h4>{invitation?.displayLabel ?? 'Invitacion'}</h4>
+                    </div>
+                    <time dateTime={delivery.createdAt}>{formatDate(delivery.createdAt)}</time>
+                  </div>
+                  <p className="delivery-event__description">{delivery.meta.detail}</p>
+                  <dl className="delivery-event__facts">
+                    <div><dt>Canal</dt><dd>{delivery.channel}</dd></div>
+                    <div><dt>Destino</dt><dd>{delivery.recipient || 'Contacto principal'}</dd></div>
+                    <div><dt>Registrado por</dt><dd>{delivery.confirmedBy ?? delivery.operator ?? 'Panel local'}</dd></div>
+                  </dl>
+                  <div className="delivery-event__actions">
+                    {delivery.meta.needsConfirmation ? (
+                      <button className="primary-button" type="button" onClick={() => handleConfirmDelivery(delivery)}>
+                        Confirmar envio
+                      </button>
+                    ) : null}
+                    {delivery.message ? (
+                      <details>
+                        <summary>Ver mensaje registrado</summary>
+                        <p>{delivery.message}</p>
+                      </details>
+                    ) : null}
+                  </div>
                 </div>
-                <small>{new Date(delivery.sentAt).toLocaleString('es-AR')}</small>
-              </div>
+              </article>
             )
-          })}
+          }) : (
+            <div className="delivery-empty">
+              <strong>No hay registros en este estado.</strong>
+              <p>Prepara una invitacion o cambia el filtro para ver el resto de la actividad.</p>
+            </div>
+          )}
         </div>
-      </article>
+      </section>
+
+      <p className="form-feedback" aria-live="polite">{feedback}</p>
     </section>
   )
 }

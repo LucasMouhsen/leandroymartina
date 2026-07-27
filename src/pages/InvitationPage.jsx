@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import SecondaryFooterNav from '../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../context/useWedding.jsx'
 
@@ -37,6 +38,7 @@ function formatGoogleCalendarDate(value) {
 }
 
 export default function InvitationPage() {
+  const { token } = useParams()
   const audioRef = useRef(null)
   const userPausedRef = useRef(false)
   const openTimerRef = useRef(null)
@@ -44,8 +46,14 @@ export default function InvitationPage() {
   const [audioNotice, setAudioNotice] = useState('')
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false)
   const [showInvitation, setShowInvitation] = useState(false)
-  const { weddingEvent } = useWedding()
-  const countdownTarget = new Date(weddingEvent.countdownTarget)
+  const { getInvitationByToken, weddingEvent } = useWedding()
+  const invitation = token ? getInvitationByToken(token) : null
+  const isPersonalInvitation = Boolean(token && invitation)
+  const isInvalidPersonalInvitation = Boolean(token && !invitation)
+  const countdownTarget = useMemo(
+    () => new Date(weddingEvent.countdownTarget),
+    [weddingEvent.countdownTarget],
+  )
   const [countdownParts, setCountdownParts] = useState(() => getCountdownParts(countdownTarget))
 
   useEffect(() => {
@@ -98,16 +106,18 @@ export default function InvitationPage() {
   ), [])
 
   useEffect(() => {
-    setCountdownParts(getCountdownParts(countdownTarget))
-
-    const intervalId = window.setInterval(() => {
+    const updateCountdown = () => {
       setCountdownParts(getCountdownParts(countdownTarget))
-    }, 1000)
+    }
+
+    const timeoutId = window.setTimeout(updateCountdown, 0)
+    const intervalId = window.setInterval(updateCountdown, 1000)
 
     return () => {
+      window.clearTimeout(timeoutId)
       window.clearInterval(intervalId)
     }
-  }, [weddingEvent.countdownTarget])
+  }, [countdownTarget])
 
   const calendarStart = formatGoogleCalendarDate(countdownTarget)
   const calendarEnd = formatGoogleCalendarDate(new Date(countdownTarget.getTime() + 4 * 60 * 60 * 1000))
@@ -182,6 +192,26 @@ export default function InvitationPage() {
     audio.pause()
   }
 
+  if (isInvalidPersonalInvitation) {
+    return (
+      <div className="site-shell invitation-shell">
+        <main className="invitation-invalid">
+          <div className="feature-empty__card">
+            <p className="feature-kicker">Invitacion personalizada</p>
+            <h1>Este enlace no es valido</h1>
+            <p>
+              Puede haber expirado o estar incompleto. Pediles a los novios que te
+              reenvien tu invitacion personalizada.
+            </p>
+            <Link className="primary-button" to="/">
+              Ver invitacion general
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="site-shell invitation-shell">
       <audio
@@ -251,7 +281,7 @@ export default function InvitationPage() {
           <div className="hero-stage">
             <img
               className="hero-background"
-              src={asset('assets/optimized/hero-photo.png')}
+              src={asset('assets/original/hero-photo.png')}
               alt=""
               aria-hidden="true"
               decoding="async"
@@ -277,8 +307,13 @@ export default function InvitationPage() {
                   <h2 className="script-heading">
                     &iexcl;Nos casamos!
                   </h2>
+                  {isPersonalInvitation ? (
+                    <p className="personal-invitation-label">
+                      Invitacion especial para {invitation.displayLabel}
+                    </p>
+                  ) : null}
                   <p>
-                    Te invitamos a celebrar con nosotros el dia que decimos Si para
+                    Te invitamos a celebrar con nosotros el día que decimos Sí para
                     toda la vida
                   </p>
                 </div>
@@ -345,7 +380,8 @@ export default function InvitationPage() {
 
         <section className="ceremony-section">
           <div className="ceremony-sprig" aria-hidden="true">
-            <img src={asset('assets/optimized/floral-cluster.webp')} alt="" loading="lazy" decoding="async" />
+            <img className="ceremony-sprig__stem" src={asset('assets/original/floral-stem.png')} alt="" loading="lazy" decoding="async" />
+            <img className="ceremony-sprig__leaves" src={asset('assets/original/floral-cluster.png')} alt="" loading="lazy" decoding="async" />
           </div>
 
           <div className="ceremony-layout">
@@ -356,7 +392,7 @@ export default function InvitationPage() {
               <p className="section-place">
                 Parroquia
                 <br />
-                Nuestra Senora del Valle
+                Nuestra Señora del Valle
               </p>
               <div className="section-divider" aria-hidden="true">
                 <img src={asset('assets/original/divider-light.svg')} alt="" />
@@ -376,7 +412,7 @@ export default function InvitationPage() {
 
             <img
               className="ceremony-image"
-              src={asset('assets/optimized/ceremony-photo.webp')}
+              src={asset('assets/original/ceremony-photo.png')}
               alt="Ilustracion de la parroquia"
               loading="lazy"
               decoding="async"
@@ -386,32 +422,34 @@ export default function InvitationPage() {
 
         <section className="olive-panel reception-section">
           <div className="reception-layout">
+            <div className="reception-details">
+              <div className="reception-copy">
+                <h2 className="reception-title">
+                  RECEPCIÓN
+                </h2>
+                <p className="reception-script">
+                  y celebración
+                </p>
+              </div>
+            </div>
+
             <div className="reception-visual">
               <div className="reception-flower" aria-hidden="true">
-                <img src={asset('assets/optimized/reception-photo.webp')} alt="" loading="lazy" decoding="async" />
+                <img src={asset('assets/original/reception-photo.png')} alt="" loading="lazy" decoding="async" />
               </div>
 
               <img
                 className="reception-image"
-                src={asset('assets/optimized/party-photo.webp')}
+                src={asset('assets/original/party-photo.png')}
                 alt="Club Hipico San Jorge"
                 loading="lazy"
                 decoding="async"
               />
             </div>
 
-            <div className="reception-details">
-              <div className="reception-copy">
-                <h2 className="reception-title">
-                  RECEPCION
-                </h2>
-                <p className="reception-script">
-                  y celebracion
-                </p>
-              </div>
-
+            <div className="reception-details reception-details--location">
               <p className="reception-place">
-                Club Hipico San Jorge
+                Club Hípico San Jorge
               </p>
               <div className="reception-divider" aria-hidden="true">
                 <img src={asset('assets/original/divider-dark.svg')} alt="" />
@@ -435,10 +473,10 @@ export default function InvitationPage() {
           <div className="gifts-layout">
             <div className="gifts-message">
               <h2 className="gifts-title">
-                &iexcl;Tu presencia es lo mas importante para nosotros!
+                &iexcl;Tu presencia es lo más importante para nosotros!
               </h2>
               <p className="gifts-copy">
-                Si ademas te gustaria ayudarnos con nuestra luna de miel y
+                Si además te gustaría ayudarnos con nuestra luna de miel y
                 proyectos futuros, te compartimos los datos
               </p>
             </div>
@@ -447,28 +485,28 @@ export default function InvitationPage() {
               <div className="gifts-spray" aria-hidden="true">
                 <img
                   className="gift-stem gift-stem--eucalyptus"
-                  src={asset('assets/optimized/dress-shape-1.webp')}
+                  src={asset('assets/original/dress-shape-1.png')}
                   alt=""
                   loading="lazy"
                   decoding="async"
                 />
                 <img
                   className="gift-stem gift-stem--wheat"
-                  src={asset('assets/optimized/dress-shape-3.webp')}
+                  src={asset('assets/original/dress-shape-3.png')}
                   alt=""
                   loading="lazy"
                   decoding="async"
                 />
                 <img
                   className="gift-stem gift-stem--mimosa"
-                  src={asset('assets/optimized/dress-shape-4.webp')}
+                  src={asset('assets/original/dress-shape-4.png')}
                   alt=""
                   loading="lazy"
                   decoding="async"
                 />
                 <img
                   className="gift-stem gift-stem--cluster"
-                  src={asset('assets/optimized/floral-cluster.webp')}
+                  src={asset('assets/original/floral-cluster.png')}
                   alt=""
                   loading="lazy"
                   decoding="async"
@@ -476,8 +514,17 @@ export default function InvitationPage() {
               </div>
 
               <div className="gift-details">
-                {weddingEvent.giftInstructions.map((detail) => (
-                  <p key={detail}>{detail}</p>
+                {[
+                  weddingEvent.giftInstructions[1],
+                  weddingEvent.giftInstructions[2],
+                  weddingEvent.giftInstructions[0],
+                ].filter(Boolean).map((detail) => (
+                  <p key={detail}>
+                    {detail
+                      .replace('CBU en pesos:', 'CBU PESOS:')
+                      .replace('CBU en USD:', 'CBU USD:')
+                      .replace('Alias:', 'ALIAS:')}
+                  </p>
                 ))}
               </div>
             </div>
@@ -487,7 +534,7 @@ export default function InvitationPage() {
         <section className="olive-panel dress-section">
           <img
             className="dress-background"
-            src={asset('assets/original/gallery-flower-cutout.png')}
+            src={asset('assets/original/canva-dress-bg.jpg')}
             alt=""
             aria-hidden="true"
             loading="lazy"
@@ -518,34 +565,39 @@ export default function InvitationPage() {
         </section>
 
         <section className="rsvp-section">
-          <img
-            className="rsvp-background"
-            src={asset('assets/optimized/hero-photo.webp')}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-          />
-
-          <div className="rsvp-copy">
-            <h2>&iexcl;Confirmanos tu asistencia!</h2>
-            <button
-              className="map-button map-button--olive"
-              type="button"
-              disabled
-              title="El export original no expone el enlace publico de RSVP"
-            >
-              RSVP
-            </button>
             <img
-              className="rsvp-icon"
-              src={asset('assets/optimized/rsvp-icon.webp')}
+              className="rsvp-background"
+              src={asset('assets/original/hero-photo.jpg')}
               alt=""
               aria-hidden="true"
               loading="lazy"
               decoding="async"
             />
-          </div>
+
+            <div className="rsvp-copy">
+              {isPersonalInvitation ? (
+                <p className="personal-rsvp-kicker">Invitacion para {invitation.displayLabel}</p>
+              ) : null}
+              <h2>
+                <span>&iexcl;Confírmanos tu</span>
+                <br />
+                <span>asistencia!</span>
+              </h2>
+              <Link
+                className="map-button map-button--olive"
+                to={isPersonalInvitation ? `/confirmar/${invitation.token}` : '/mensajes'}
+              >
+                RSVP
+              </Link>
+              <img
+                className="rsvp-icon"
+                src={asset('assets/original/rsvp-icon.png')}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
         </section>
 
         <SecondaryFooterNav

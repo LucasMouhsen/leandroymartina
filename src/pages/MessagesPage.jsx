@@ -73,13 +73,13 @@ export default function MessagesPage() {
         <form className="form-card" onSubmit={onSubmit}>
           <label>
             Tu nombre
-            <input {...form.register('guestName')} />
+            <input autoComplete="name" {...form.register('guestName')} />
             <span>{form.formState.errors.guestName?.message}</span>
           </label>
 
           <label>
             Mensaje
-            <textarea rows="6" {...form.register('note')} />
+            <textarea rows="6" autoComplete="off" {...form.register('note')} />
             <span>{form.formState.errors.note?.message}</span>
           </label>
 
@@ -97,7 +97,7 @@ export default function MessagesPage() {
             Enviar mensaje
           </button>
 
-          {status ? <p className="form-feedback">{status}</p> : null}
+          <p className="form-feedback" role="status" aria-live="polite">{status ?? ''}</p>
         </form>
 
         <div className="message-wall">

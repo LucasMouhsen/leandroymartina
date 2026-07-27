@@ -1,7 +1,7 @@
 import { useWedding } from '../../context/useWedding.jsx'
 
 export default function AdminReportsPage() {
-  const { metrics, giftItems, giftContributions } = useWedding()
+  const { exportGuests, metrics, giftItems, giftContributions } = useWedding()
 
   return (
     <section className="admin-panel">
@@ -10,6 +10,9 @@ export default function AdminReportsPage() {
           <p className="feature-kicker">Resumen general</p>
           <h2>Estado del evento</h2>
         </div>
+        <button className="secondary-button" type="button" onClick={exportGuests}>
+          Exportar catering CSV
+        </button>
       </header>
 
       <div className="stats-grid">

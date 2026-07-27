@@ -10,7 +10,7 @@ import { initialWeddingState } from '../data/initialState.js'
 
 const STORAGE_KEY = 'wedding-hub-state-v1'
 const SESSION_KEY = 'wedding-hub-session-v1'
-const STATE_VERSION = 3
+const STATE_VERSION = 5
 const PUBLIC_SITE_URL = 'https://lucasmouhsen.github.io/leandroymartina'
 
 const WeddingContext = createContext(null)
@@ -27,11 +27,89 @@ function clamp(num, min, max) {
   return Math.max(min, Math.min(max, num))
 }
 
+function hasRsvpDeadlinePassed(deadline) {
+  const deadlineAt = new Date(`${deadline}T23:59:59-03:00`)
+  return !Number.isNaN(deadlineAt.getTime()) && new Date() > deadlineAt
+}
+
 function buildContactName(invitation) {
   return [invitation.primaryContactFirstName, invitation.primaryContactLastName]
     .filter(Boolean)
     .join(' ')
     .trim()
+}
+
+function buildPersonName(person, fallback = 'Invitado') {
+  return [person?.firstName, person?.lastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || person?.name || fallback
+}
+
+function buildRsvpAttendeeRows(invitation, response = null) {
+  const savedAttendees = response?.attendees ?? []
+  const savedByMemberId = new Map(
+    savedAttendees
+      .filter((attendee) => attendee.memberId)
+      .map((attendee) => [attendee.memberId, attendee]),
+  )
+  const savedCompanions = savedAttendees.filter((attendee) => attendee.type === 'companion')
+  const legacyCount = response?.attendees?.length ? null : Number(response?.attendingCount ?? 0)
+  const legacyDiet = response?.dietaryRestrictions ?? ''
+
+  const memberRows = (invitation.members ?? []).map((member, index) => {
+    const saved = savedByMemberId.get(member.id)
+    const attending = saved
+      ? Boolean(saved.attending)
+      : response?.status === 'confirmado' && (legacyCount === null || index < legacyCount)
+
+    return {
+      id: saved?.id ?? `member-${member.id}`,
+      type: 'member',
+      memberId: member.id,
+      firstName: member.firstName,
+      lastName: member.lastName,
+      name: buildPersonName(member, `Integrante ${index + 1}`),
+      attending,
+      dietaryRestrictions: saved?.dietaryRestrictions ?? (attending && index === 0 ? legacyDiet : ''),
+    }
+  })
+
+  const companionSlots = Math.max((invitation.allowedSeats ?? 1) - memberRows.length, 0)
+  const companionRows = Array.from({ length: companionSlots }, (_, index) => {
+    const saved = savedCompanions[index]
+    const attending = saved
+      ? Boolean(saved.attending)
+      : response?.status === 'confirmado' && legacyCount !== null && memberRows.length + index < legacyCount
+
+    return {
+      id: saved?.id ?? `companion-${index + 1}`,
+      type: 'companion',
+      memberId: null,
+      firstName: saved?.firstName ?? '',
+      lastName: saved?.lastName ?? '',
+      name: saved?.name ?? `Acompanante ${index + 1}`,
+      attending,
+      dietaryRestrictions: saved?.dietaryRestrictions ?? '',
+    }
+  })
+
+  return [...memberRows, ...companionRows]
+}
+
+function normalizeRsvpAttendees(invitation, response) {
+  return buildRsvpAttendeeRows(invitation, response).map((attendee) => ({
+    id: attendee.id,
+    type: attendee.type,
+    memberId: attendee.memberId,
+    firstName: attendee.firstName ?? '',
+    lastName: attendee.lastName ?? '',
+    name: attendee.type === 'companion'
+      ? attendee.name || buildPersonName(attendee, 'Acompanante')
+      : buildPersonName(attendee),
+    attending: Boolean(attendee.attending),
+    dietaryRestrictions: attendee.dietaryRestrictions ?? '',
+  }))
 }
 
 function derivePrimaryMember(members = []) {
@@ -150,6 +228,7 @@ function migrateState(parsed) {
         primaryContactLastName: invitation.primaryContactLastName ?? primaryMember?.lastName ?? '',
         primaryContactEmail: invitation.primaryContactEmail ?? primaryMember?.email ?? '',
         primaryContactPhone: invitation.primaryContactPhone ?? primaryMember?.phone ?? '',
+        accessStatus: invitation.accessStatus ?? 'active',
         members,
       }
     })
@@ -197,7 +276,7 @@ function loadState() {
     const parsed = migrateState(JSON.parse(stored))
     const merged = { ...initialWeddingState, ...parsed }
 
-    if (!parsed.stateVersion || parsed.stateVersion < STATE_VERSION) {
+    if (!parsed.stateVersion || parsed.stateVersion < 4) {
       return {
         ...merged,
         giftItems: initialWeddingState.giftItems,
@@ -401,6 +480,7 @@ function normalizeInvitationRows(rows) {
           primaryContactLastName: lastName || '',
           primaryContactEmail: email,
           primaryContactPhone: phone,
+          accessStatus: 'active',
           deliveryStatus: 'pendiente',
           createdAt: new Date().toISOString(),
           members: [],
@@ -491,7 +571,11 @@ export function WeddingProvider({ children }) {
 
   const getInvitationByToken = useCallback(
     (token) =>
-      invitations.find((invitation) => invitation.token.toLowerCase() === String(token).toLowerCase()) ?? null,
+      invitations.find(
+        (invitation) =>
+          invitation.accessStatus !== 'paused' &&
+          invitation.token.toLowerCase() === String(token).toLowerCase(),
+      ) ?? null,
     [invitations],
   )
 
@@ -512,7 +596,16 @@ export function WeddingProvider({ children }) {
     [rsvpResponses],
   )
 
+  const getRsvpAttendees = useCallback(
+    (invitation, response = null) => buildRsvpAttendeeRows(invitation, response),
+    [],
+  )
+
   const buildInviteLink = useCallback((token) => {
+    return `${PUBLIC_SITE_URL}/#/invitacion/${token}`
+  }, [])
+
+  const buildRsvpLink = useCallback((token) => {
     return `${PUBLIC_SITE_URL}/#/confirmar/${token}`
   }, [])
 
@@ -543,13 +636,39 @@ export function WeddingProvider({ children }) {
       return { ok: false, message: 'El enlace ya no es valido.' }
     }
 
-    const requestedCount = payload.attending === 'si' ? Number(payload.attendingCount) : 0
+    if (hasRsvpDeadlinePassed(state.weddingEvent.rsvpDeadline)) {
+      return { ok: false, message: 'El plazo para confirmar asistencia ya finalizo. Contacta a los novios si necesitas ayuda.' }
+    }
+
+    const submittedAttendees = Array.isArray(payload.attendees)
+      ? payload.attendees.map((attendee, index) => ({
+          id: attendee.id || `attendee-${index + 1}`,
+          type: attendee.type === 'companion' ? 'companion' : 'member',
+          memberId: attendee.memberId || null,
+          firstName: attendee.firstName?.trim() ?? '',
+          lastName: attendee.lastName?.trim() ?? '',
+          name: attendee.name?.trim() || buildPersonName(attendee, attendee.type === 'companion' ? `Acompanante ${index + 1}` : `Invitado ${index + 1}`),
+          attending: payload.attending === 'si' && Boolean(attendee.attending),
+          dietaryRestrictions: attendee.dietaryRestrictions?.trim() ?? '',
+        }))
+      : []
+    const requestedCount = payload.attending === 'si'
+      ? submittedAttendees.filter((attendee) => attendee.attending).length || Number(payload.attendingCount ?? 0)
+      : 0
 
     if (payload.attending === 'si' && (requestedCount < 1 || requestedCount > invitation.allowedSeats)) {
       return {
         ok: false,
         message: `Esta invitacion permite confirmar entre 1 y ${invitation.allowedSeats} ${invitation.allowedSeats === 1 ? 'persona' : 'personas'}.`,
       }
+    }
+
+    const unnamedCompanion = submittedAttendees.find(
+      (attendee) => attendee.attending && attendee.type === 'companion' && !attendee.name.trim(),
+    )
+
+    if (unnamedCompanion) {
+      return { ok: false, message: 'Ingresa el nombre de cada acompanante que confirme asistencia.' }
     }
 
     const now = new Date().toISOString()
@@ -563,7 +682,15 @@ export function WeddingProvider({ children }) {
         invitationId: invitation.id,
         status: payload.attending === 'si' ? 'confirmado' : 'rechazado',
         attendingCount: requestedCount,
-        dietaryRestrictions: payload.dietaryRestrictions,
+        attendees: normalizeRsvpAttendees(invitation, {
+          status: payload.attending === 'si' ? 'confirmado' : 'rechazado',
+          attendingCount: requestedCount,
+          attendees: submittedAttendees,
+        }),
+        dietaryRestrictions: submittedAttendees
+          .filter((attendee) => attendee.attending && attendee.dietaryRestrictions)
+          .map((attendee) => `${attendee.name}: ${attendee.dietaryRestrictions}`)
+          .join('; '),
         comments: payload.comments,
         updatedAt: now,
       }
@@ -592,19 +719,6 @@ export function WeddingProvider({ children }) {
           : guest,
       )
 
-      const nextDeliveries = [
-        ...current.inviteDeliveries,
-        {
-          id: `delivery-${createToken()}`,
-          invitationId: invitation.id,
-          channel: invitation.primaryContactPhone ? 'whatsapp' : 'email',
-          type: 'confirmacion',
-          status: 'registrada',
-          message: `Respuesta RSVP registrada para ${invitation.displayLabel}.`,
-          sentAt: now,
-        },
-      ]
-
       const nextAudit = [
         ...current.auditLog,
         {
@@ -621,13 +735,12 @@ export function WeddingProvider({ children }) {
         invitations: nextInvitations,
         guests: nextGuests,
         rsvpResponses: nextResponses,
-        inviteDeliveries: nextDeliveries,
         auditLog: nextAudit,
       }
     })
 
     return { ok: true }
-  }, [getInvitationByToken])
+  }, [getInvitationByToken, state.weddingEvent.rsvpDeadline])
 
   const submitGiftContribution = useCallback(async (payload) => {
     const now = new Date().toISOString()
@@ -777,6 +890,7 @@ export function WeddingProvider({ children }) {
       primaryContactLastName: primaryMember?.lastName ?? '',
       primaryContactEmail: primaryMember?.email ?? '',
       primaryContactPhone: primaryMember?.phone ?? '',
+      accessStatus: 'active',
       deliveryStatus: 'pendiente',
       createdAt: now,
       members,
@@ -841,11 +955,11 @@ export function WeddingProvider({ children }) {
 
   const exportGuests = useCallback(async () => {
     const Papa = await loadPapa()
-    const rows = invitations.map((invitation) => {
+    const rows = invitations.flatMap((invitation) => {
       const response = getResponseByInvitation(invitation.id)
       const contactName = buildContactName(invitation)
 
-      return {
+      return buildRsvpAttendeeRows(invitation, response).map((attendee) => ({
         invitacion: invitation.displayLabel,
         tipo: invitation.invitationMode ?? (invitation.members?.length > 1 ? 'group' : 'individual'),
         contacto_principal: contactName,
@@ -856,12 +970,12 @@ export function WeddingProvider({ children }) {
         estado_envio: invitation.deliveryStatus,
         estado_rsvp: response?.status ?? 'sin_respuesta',
         asistentes_confirmados: response?.attendingCount ?? 0,
-        restricciones: response?.dietaryRestrictions ?? '',
+        persona: attendee.name,
+        tipo_persona: attendee.type === 'companion' ? 'acompanante' : 'integrante',
+        asiste: response ? (attendee.attending ? 'si' : 'no') : 'sin_respuesta',
+        restriccion_alimentaria: attendee.attending ? attendee.dietaryRestrictions : '',
         comentarios: response?.comments ?? '',
-        integrantes: (invitation.members ?? [])
-          .map((member) => `${member.firstName} ${member.lastName}`.trim())
-          .join(', '),
-      }
+      }))
     })
 
     const csv = Papa.unparse(rows)
@@ -874,44 +988,110 @@ export function WeddingProvider({ children }) {
     URL.revokeObjectURL(url)
   }, [getResponseByInvitation, invitations])
 
-  const recordDelivery = useCallback((invitationId, channel, message) => {
+  const recordDelivery = useCallback((invitationId, payload) => {
     const now = new Date().toISOString()
-    const nextStatus =
-      channel === 'whatsapp'
-        ? 'enviada_whatsapp'
-        : channel === 'email'
-          ? 'enviada_email'
-          : 'recordatorio'
+    const record = {
+      id: `delivery-${createToken()}`,
+      invitationId,
+      channel: payload.channel,
+      type: payload.type,
+      status: payload.status ?? 'prepared',
+      message: payload.message ?? '',
+      recipient: payload.recipient ?? '',
+      inviteLink: payload.inviteLink ?? '',
+      operator: session?.email ?? 'panel local',
+      createdAt: now,
+    }
 
     setState((current) => ({
       ...current,
-      invitations: current.invitations.map((invitation) =>
-        invitation.id === invitationId
-          ? {
-              ...invitation,
-              deliveryStatus: nextStatus,
-            }
-          : invitation,
-      ),
-      guests: current.guests.map((guest) =>
-        guest.invitationId === invitationId
-          ? {
-              ...guest,
-              inviteStatus: nextStatus,
-            }
-          : guest,
-      ),
       inviteDeliveries: [
-        {
-          id: `delivery-${createToken()}`,
-          invitationId,
-          channel,
-          type: 'envio_manual',
-          status: 'registrada',
-          message,
-          sentAt: now,
-        },
+        record,
         ...current.inviteDeliveries,
+      ],
+    }))
+    return record
+  }, [session?.email])
+
+  const confirmDelivery = useCallback((deliveryId) => {
+    const now = new Date().toISOString()
+
+    setState((current) => {
+      const delivery = current.inviteDeliveries.find((item) => item.id === deliveryId)
+
+      if (!delivery || delivery.status === 'sent_manual') {
+        return current
+      }
+
+      const deliveryStatus = delivery.channel === 'whatsapp' ? 'enviada_whatsapp' : 'enviada_email'
+      return {
+        ...current,
+        invitations: current.invitations.map((invitation) =>
+          invitation.id === delivery.invitationId
+            ? { ...invitation, deliveryStatus }
+            : invitation,
+        ),
+        guests: current.guests.map((guest) =>
+          guest.invitationId === delivery.invitationId
+            ? { ...guest, inviteStatus: deliveryStatus }
+            : guest,
+        ),
+        inviteDeliveries: current.inviteDeliveries.map((item) =>
+          item.id === deliveryId
+            ? { ...item, status: 'sent_manual', confirmedAt: now, confirmedBy: session?.email ?? 'panel local' }
+            : item,
+        ),
+        auditLog: [
+          {
+            id: `audit-${createToken()}`,
+            action: 'delivery_confirmed_manually',
+            entityId: delivery.invitationId,
+            detail: `Envio por ${delivery.channel} confirmado para ${delivery.recipient || 'el contacto principal'}.`,
+            createdAt: now,
+          },
+          ...current.auditLog,
+        ],
+      }
+    })
+  }, [session?.email])
+
+  const setInvitationAccess = useCallback((invitationId, accessStatus) => {
+    const now = new Date().toISOString()
+    setState((current) => ({
+      ...current,
+      invitations: current.invitations.map((invitation) =>
+        invitation.id === invitationId ? { ...invitation, accessStatus } : invitation,
+      ),
+      auditLog: [
+        {
+          id: `audit-${createToken()}`,
+          action: `invitation_${accessStatus}`,
+          entityId: invitationId,
+          detail: `Acceso de invitacion marcado como ${accessStatus}.`,
+          createdAt: now,
+        },
+        ...current.auditLog,
+      ],
+    }))
+  }, [])
+
+  const regenerateInvitationToken = useCallback((invitationId) => {
+    const now = new Date().toISOString()
+    const token = createToken()
+    setState((current) => ({
+      ...current,
+      invitations: current.invitations.map((invitation) =>
+        invitation.id === invitationId ? { ...invitation, token, accessStatus: 'active' } : invitation,
+      ),
+      auditLog: [
+        {
+          id: `audit-${createToken()}`,
+          action: 'invitation_token_regenerated',
+          entityId: invitationId,
+          detail: 'Se regenero el enlace personalizado de la invitacion.',
+          createdAt: now,
+        },
+        ...current.auditLog,
       ],
     }))
   }, [])
@@ -988,11 +1168,13 @@ export function WeddingProvider({ children }) {
       login,
       logout,
       buildInviteLink,
+      buildRsvpLink,
       buildInviteMessage,
       getInvitationByToken,
       getInvitationMembers,
       getGuestsByInvitation,
       getResponseByInvitation,
+      getRsvpAttendees,
       submitRsvp,
       submitGiftContribution,
       setContributionStatus,
@@ -1005,6 +1187,9 @@ export function WeddingProvider({ children }) {
       importGuests,
       exportGuests,
       recordDelivery,
+      confirmDelivery,
+      setInvitationAccess,
+      regenerateInvitationToken,
       uploadPublicFile,
     }),
     [
@@ -1021,10 +1206,12 @@ export function WeddingProvider({ children }) {
       login,
       logout,
       buildInviteLink,
+      buildRsvpLink,
       getInvitationByToken,
       getInvitationMembers,
       getGuestsByInvitation,
       getResponseByInvitation,
+      getRsvpAttendees,
       submitRsvp,
       submitGiftContribution,
       setContributionStatus,
@@ -1037,6 +1224,9 @@ export function WeddingProvider({ children }) {
       importGuests,
       exportGuests,
       recordDelivery,
+      confirmDelivery,
+      setInvitationAccess,
+      regenerateInvitationToken,
       uploadPublicFile,
     ],
   )

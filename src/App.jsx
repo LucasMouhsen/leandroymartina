@@ -5,6 +5,7 @@ import './site.css'
 import { WeddingProvider } from './context/WeddingContext.jsx'
 import { useWedding } from './context/useWedding.jsx'
 import InvitationPage from './pages/InvitationPage.jsx'
+
 const FeatureLayout = lazy(() => import('./pages/FeatureLayout.jsx'))
 const GiftsPage = lazy(() => import('./pages/GiftsPage.jsx'))
 const GuestRsvpPage = lazy(() => import('./pages/GuestRsvpPage.jsx'))
@@ -23,7 +24,7 @@ function RouteFallback() {
     <div className="route-fallback" aria-live="polite">
       <div className="route-fallback__card">
         <span className="feature-kicker">Cargando</span>
-        <strong>Preparando la sección…</strong>
+        <strong>Preparando la seccion&hellip;</strong>
       </div>
     </div>
   )
@@ -50,6 +51,7 @@ function AppRoutes() {
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<InvitationPage />} />
+          <Route path="/invitacion/:token" element={<InvitationPage />} />
 
           <Route element={<FeatureLayout />}>
             <Route path="/confirmar/:token" element={<GuestRsvpPage />} />
