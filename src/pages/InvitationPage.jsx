@@ -405,13 +405,6 @@ export default function InvitationPage() {
                   loading="lazy"
                   decoding="async"
                 />
-                <img
-                  className="gift-stem gift-stem--cluster"
-                  src={asset('assets/original/floral-cluster.png')}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                />
               </div>
 
               <div className="gift-details">

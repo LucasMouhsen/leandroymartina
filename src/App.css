@@ -238,6 +238,7 @@
   min-height: 60vh;
   min-height: 60svh;
   overflow: hidden;
+  margin-bottom: 1rem;
 }
 
 .hero-stage {
@@ -248,7 +249,7 @@
 .hero-background {
   position: absolute;
   inset: 0;
-  width: 100%;
+  width: 70%;
   height: 100%;
   object-fit: cover;
   object-position: left center;
@@ -1448,7 +1449,7 @@
 
   .hero-title {
     gap: 0.22rem;
-    font-size: 2.25rem;
+    font-size: 2.85rem;
     line-height: 0.94;
   }
 
@@ -1464,8 +1465,8 @@
   }
 
   .invitation-page > .intro-panel {
-    background-position: center bottom;
-    background-size: 145% auto;
+    background-position: 75% bottom;
+    background-size: 138% auto;
   }
 
   .intro-copy {
@@ -1499,19 +1500,19 @@
 
   .ceremony-sprig__stem {
     top: 0;
-    left: calc(50% + 1rem);
     z-index: 2;
     width: 7rem !important;
-    height: 13.8rem;
-    transform: translateX(-46%) rotate(184deg);
+    height: 10.5rem;
+    left: calc(50%);
+    transform: translateX(-50%) rotate(180deg);
   }
 
   .ceremony-sprig__leaves {
-    top: 3.6rem;
-    left: calc(50% + 1rem);
+    top: 2rem;
     z-index: 1;
     width: 10.5rem !important;
-    transform: translateX(-50%) rotate(188deg);
+    left: calc(50%);
+    transform: translateX(-50%) rotate(220deg);
   }
 
   .section-title {
@@ -1704,18 +1705,20 @@
   .dress-code-word {
     font-size: 2.3rem;
     font-weight: 700;
+    margin-left: 5rem;
   }
 
   .dress-illustration {
     width: 10rem;
     margin-top: 0.5rem;
-    margin-left: 2.75rem;
+    margin-left: 5rem;
   }
 
   .dress-label {
     margin-top: 1.35rem;
     font-family: var(--font-label);
     font-size: 1rem;
+    margin-left: 2rem;
   }
 
   .invitation-page > .rsvp-section,
