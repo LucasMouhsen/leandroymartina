@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import './App.css'
 import './site.css'
+import ScrollToTop from './components/ScrollToTop.jsx'
 import { WeddingProvider } from './context/WeddingContext.jsx'
 import { useWedding } from './context/useWedding.jsx'
 import InvitationPage from './pages/InvitationPage.jsx'
@@ -48,6 +49,7 @@ function ProtectedAdmin() {
 function AppRoutes() {
   return (
     <HashRouter>
+      <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<InvitationPage />} />

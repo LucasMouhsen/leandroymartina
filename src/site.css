@@ -608,6 +608,18 @@ body {
   min-height: 11rem;
 }
 
+.gift-card__badge {
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(232, 214, 165, 0.46);
+  color: var(--olive-deep);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .gift-card__header {
   align-items: flex-start;
 }
@@ -1638,6 +1650,132 @@ td code,
   letter-spacing: 0.16em;
 }
 
+.gift-payment-detail {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, auto) minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(127, 143, 117, 0.14);
+}
+
+.gift-payment-detail strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
+.gift-payment-detail button {
+  border: 1px solid rgba(127, 143, 117, 0.3);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--olive-deep);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.gift-payment-detail button:hover,
+.gift-payment-detail button:focus-visible {
+  border-color: var(--olive-deep);
+  background: #fff;
+}
+
+.gift-payment-feedback {
+  min-height: 1.25rem;
+  margin: 0;
+  color: var(--olive-deep);
+  font-size: 0.86rem;
+}
+
+.gift-modal__mercado-pago {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mercado-pago-button {
+  display: flex;
+  width: 100%;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  border-radius: 14px;
+  padding: 0.6rem 0.75rem 0.6rem 0.7rem;
+  background: linear-gradient(135deg, #009ee3 0%, #008fce 100%);
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 10px 20px rgba(0, 118, 175, 0.2);
+  transition: box-shadow 160ms ease, filter 160ms ease, transform 160ms ease;
+}
+
+.mercado-pago-button__brand,
+.mercado-pago-button__action {
+  display: inline-flex;
+  align-items: center;
+}
+
+.mercado-pago-button__brand {
+  gap: 0.65rem;
+}
+
+.mercado-pago-button__mark {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 10px;
+  background: #ffe600;
+  color: #007eb8;
+  font-family: var(--font-label);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: -0.08em;
+}
+
+.mercado-pago-button__action {
+  gap: 0.35rem;
+  padding-left: 0.85rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.mercado-pago-button__action span {
+  font-size: 1.4rem;
+  line-height: 0.8;
+}
+
+.mercado-pago-button:hover {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+  box-shadow: 0 13px 24px rgba(0, 118, 175, 0.26);
+}
+
+.mercado-pago-button:focus-visible {
+  outline: 3px solid rgba(0, 158, 227, 0.28);
+  outline-offset: 3px;
+}
+
+.gift-modal__mercado-pago small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.gift-modal__mercado-pago p {
+  min-height: 1.25rem;
+  margin: 0;
+  color: var(--olive-deep);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
 .gift-modal__close {
   position: sticky;
   top: 0.8rem;
@@ -2004,6 +2142,14 @@ td code,
   .gift-modal__fixed-amount {
     padding: 0.75rem;
     border-radius: 16px;
+  }
+
+  .gift-payment-detail {
+    grid-template-columns: 1fr auto;
+  }
+
+  .gift-payment-detail span {
+    grid-column: 1 / -1;
   }
 
   .gift-modal__form {

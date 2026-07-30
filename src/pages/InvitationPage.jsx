@@ -261,6 +261,22 @@ export default function InvitationPage() {
                   </p>
                 </div>
 
+                <button
+                  className="intro-audio-control"
+                  type="button"
+                  onClick={toggleAudio}
+                  aria-label={isPlaying ? 'Pausar música' : 'Reproducir música'}
+                >
+                  <span className="intro-audio-control__icon" aria-hidden="true">
+                    <img
+                      src={asset(isPlaying ? 'assets/original/player-play.gif' : 'assets/original/player-pause.png')}
+                      alt=""
+                    />
+                  </span>
+                  <span className="intro-audio-control__label">
+                    {isPlaying ? 'Tocá para pausar la música' : 'Activá el sonido y tocá play'}
+                  </span>
+                </button>
               </div>
 
               {audioNotice ? (

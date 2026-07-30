@@ -7,7 +7,11 @@ export default function SecondaryFooterNav({ links, label = 'Navegacion' }) {
         <span className="invitation-footer-nav__label">{label}</span>
         <nav className="invitation-footer-nav__links" aria-label={label}>
           {links.map(({ to, text }) => (
-            <NavLink key={`${to}-${text}`} to={to}>
+            <NavLink
+              key={`${to}-${text}`}
+              to={to}
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })}
+            >
               {text}
             </NavLink>
           ))}

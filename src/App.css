@@ -509,6 +509,10 @@
   letter-spacing: 0.01em;
 }
 
+.intro-audio-control {
+  display: none;
+}
+
 .player {
   position: fixed;
   top: 6.25rem;
@@ -1478,6 +1482,66 @@
     max-width: 13.25rem;
     font-size: 1rem;
     line-height: 1.35;
+  }
+
+  .intro-audio-control {
+    position: absolute;
+    top: 28.25rem;
+    /* El texto mide 13.25rem y arranca a 2.2rem: centra el control bajo ese bloque. */
+    left: calc(2.2rem + 6.625rem);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #fffdf7;
+    cursor: pointer;
+    transform: translateX(-50%);
+  }
+
+  .intro-audio-control__icon {
+    display: grid;
+    width: 3.2rem;
+    height: 3.2rem;
+    place-items: center;
+    border-radius: 50%;
+    background: #dfc6a1;
+    box-shadow: 0 0.3rem 0.8rem rgba(71, 64, 45, 0.14);
+    transition: transform 180ms ease, filter 180ms ease;
+  }
+
+  .intro-audio-control__icon img {
+    display: block;
+    width: 1.55rem;
+    height: 1.55rem;
+    object-fit: contain;
+  }
+
+  .intro-audio-control__label {
+    max-width: 10rem;
+    font-size: 0.72rem;
+    font-style: italic;
+    line-height: 1.15;
+    text-align: center;
+    text-shadow: 0 1px 0.3rem rgba(64, 58, 40, 0.24);
+  }
+
+  .intro-audio-control:hover .intro-audio-control__icon,
+  .intro-audio-control:focus-visible .intro-audio-control__icon {
+    transform: scale(1.06);
+    filter: brightness(1.04);
+  }
+
+  .intro-audio-control:focus-visible {
+    outline: none;
+  }
+
+  .intro-audio-control:focus-visible .intro-audio-control__icon {
+    outline: 2px solid rgba(255, 253, 247, 0.92);
+    outline-offset: 0.25rem;
   }
 
   .invitation-page > .ceremony-section {

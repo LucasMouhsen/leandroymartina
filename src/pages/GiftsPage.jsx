@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import EventFeatureHero from '../components/EventFeatureHero.jsx'
 import { useWedding } from '../context/useWedding.jsx'
+import { getMercadoPagoGiftLink } from '../data/mercadoPagoGiftLinks.js'
 
 const asset = (path) => `${import.meta.env.BASE_URL}${path}`
 
@@ -21,9 +22,43 @@ const freeContributionCard = {
   image: asset('assets/optimized/gallery-bg.webp'),
   description: 'Si preferis sumar con el monto que quieras, podes hacerlo desde aca.',
   category: 'aporte',
+  currency: 'ARS',
 }
 
 const PAGE_SIZE = 12
+
+function formatMoney(amount, currency = 'ARS') {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+function inferCurrency(gift) {
+  return normalizeText(gift.name).includes('usd') ? 'USD' : 'ARS'
+}
+
+function parsePaymentDetail(instructions, prefix) {
+  const item = instructions.find((instruction) => normalizeText(instruction).startsWith(normalizeText(prefix)))
+  return item?.split(':').slice(1).join(':').trim() ?? ''
+}
+
+async function copyToClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value)
+    return
+  }
+
+  const input = document.createElement('textarea')
+  input.value = value
+  input.style.position = 'fixed'
+  input.style.opacity = '0'
+  document.body.appendChild(input)
+  input.select()
+  document.execCommand('copy')
+  input.remove()
+}
 
 function roundUpPrice(value) {
   if (value <= 500000) {
@@ -100,11 +135,23 @@ export default function GiftsPage() {
   const [category, setCategory] = useState('all')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
+  const [paymentCopyStatus, setPaymentCopyStatus] = useState('')
   const closeButtonRef = useRef(null)
   const lastFocusedElementRef = useRef(null)
 
   const publicGiftItems = useMemo(
-    () => [...giftItems.map((gift) => ({ ...gift, category: classifyGift(gift.name) })), freeContributionCard],
+    () => [
+      ...giftItems.map((gift) => ({
+        ...gift,
+        category: gift.category ?? classifyGift(gift.name),
+        currency: gift.currency ?? inferCurrency(gift),
+        mercadoPagoPayment: getMercadoPagoGiftLink(gift.id),
+      })),
+      {
+        ...freeContributionCard,
+        mercadoPagoPayment: getMercadoPagoGiftLink(freeContributionCard.id),
+      },
+    ],
     [giftItems],
   )
   const priceCeiling = useMemo(
@@ -160,6 +207,11 @@ export default function GiftsPage() {
     [publicGiftItems, selectedGiftId],
   )
   const isFreeContribution = selectedGift?.id === 'free'
+  const paymentDetails = useMemo(() => ({
+    alias: parsePaymentDetail(weddingEvent.giftInstructions, 'Alias'),
+    cbuArs: parsePaymentDetail(weddingEvent.giftInstructions, 'CBU en pesos'),
+    cbuUsd: parsePaymentDetail(weddingEvent.giftInstructions, 'CBU en USD'),
+  }), [weddingEvent.giftInstructions])
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -170,10 +222,12 @@ export default function GiftsPage() {
       notes: '',
     },
   })
+  const customAmount = useWatch({ control: form.control, name: 'amount' })
 
   const closeModal = () => {
     setSelectedGiftId(null)
     setStatus(null)
+    setPaymentCopyStatus('')
     setProofFile(null)
   }
 
@@ -238,7 +292,25 @@ export default function GiftsPage() {
     })
     setProofFile(null)
     setStatus(null)
+    setPaymentCopyStatus('')
     setSelectedGiftId(gift.id)
+  }
+
+  const paymentAmount = selectedGift
+    ? (isFreeContribution ? Number(customAmount || 0) : selectedGift.suggestedAmount)
+    : 0
+
+  const handleCopyPaymentDetail = async (label, value) => {
+    try {
+      await copyToClipboard(value)
+      setPaymentCopyStatus(`${label} copiado.`)
+    } catch {
+      setPaymentCopyStatus(`No pudimos copiar el ${label.toLowerCase()}. Mantenelo presionado para copiarlo.`)
+    }
+  }
+
+  const handleMercadoPago = () => {
+    window.location.assign(selectedGift.mercadoPagoPayment.url)
   }
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -411,11 +483,12 @@ export default function GiftsPage() {
             >
               <img src={gift.image} alt={gift.name} loading="lazy" decoding="async" />
               <div className="gift-card__body">
+                {gift.collection ? <span className="gift-card__badge">{gift.collection}</span> : null}
                 <div className="gift-card__header">
                   <div className="gift-card__title-wrap">
                     <h3>{gift.name}</h3>
                   </div>
-                  <strong>${gift.suggestedAmount.toLocaleString('es-AR')}</strong>
+                  <strong>{formatMoney(gift.suggestedAmount, gift.currency)}</strong>
                 </div>
 
                 {gift.description ? (
@@ -500,9 +573,7 @@ export default function GiftsPage() {
         <div className="gift-modal" role="dialog" aria-modal="true" aria-labelledby="gift-modal-title">
           <button type="button" className="gift-modal__backdrop" onClick={closeModal} aria-label="Cerrar modal de regalo" />
           <div className="gift-modal__panel">
-            <button ref={closeButtonRef} type="button" className="gift-modal__close" onClick={closeModal} aria-label="Cerrar">
-              ×
-            </button>
+            <button ref={closeButtonRef} type="button" className="gift-modal__close" onClick={closeModal} aria-label="Cerrar" />
 
             <div className="gift-modal__layout">
               <div className="gift-modal__summary">
@@ -511,15 +582,51 @@ export default function GiftsPage() {
                 <h3 id="gift-modal-title">{selectedGift.name}</h3>
                 {selectedGift.description ? <p>{selectedGift.description}</p> : null}
                 <strong className="gift-modal__price">
-                  ${selectedGift.suggestedAmount.toLocaleString('es-AR')}
+                  {formatMoney(paymentAmount || selectedGift.suggestedAmount, selectedGift.currency)}
                 </strong>
 
                 <div className="gift-modal__payment-box">
-                  <span>Datos de transferencia</span>
-                  {weddingEvent.giftInstructions.map((item) => (
-                    <strong key={item}>{item}</strong>
-                  ))}
+                  <span>Transferencia bancaria</span>
+                  <div className="gift-payment-detail">
+                    <span>Alias</span>
+                    <strong>{paymentDetails.alias}</strong>
+                    <button type="button" onClick={() => handleCopyPaymentDetail('Alias', paymentDetails.alias)}>
+                      Copiar
+                    </button>
+                  </div>
+                  <div className="gift-payment-detail">
+                    <span>CBU pesos</span>
+                    <strong>{paymentDetails.cbuArs}</strong>
+                    <button type="button" onClick={() => handleCopyPaymentDetail('CBU en pesos', paymentDetails.cbuArs)}>
+                      Copiar
+                    </button>
+                  </div>
+                  <div className="gift-payment-detail">
+                    <span>CBU dólares</span>
+                    <strong>{paymentDetails.cbuUsd}</strong>
+                    <button type="button" onClick={() => handleCopyPaymentDetail('CBU en dólares', paymentDetails.cbuUsd)}>
+                      Copiar
+                    </button>
+                  </div>
+                  <p className="gift-payment-feedback" role="status" aria-live="polite">{paymentCopyStatus}</p>
                 </div>
+
+                {selectedGift.mercadoPagoPayment ? (
+                  <div className="gift-modal__mercado-pago">
+                    <button type="button" className="mercado-pago-button" onClick={handleMercadoPago}>
+                      <span className="mercado-pago-button__brand">
+                        <span className="mercado-pago-button__mark" aria-hidden="true">MP</span>
+                        <span>Mercado Pago</span>
+                      </span>
+                      <span className="mercado-pago-button__action">Pagar <span aria-hidden="true">›</span></span>
+                    </button>
+                    <small>
+                      {selectedGift.mercadoPagoPayment.hasFixedAmount
+                        ? 'El monto ya está cargado en el Link de Pago seguro de Mercado Pago.'
+                        : 'Mercado Pago te pedirá que indiques el monto del aporte.'}
+                    </small>
+                  </div>
+                ) : null}
               </div>
 
               <form className="form-card gift-modal__form" onSubmit={onSubmit}>
@@ -545,7 +652,7 @@ export default function GiftsPage() {
                 ) : (
                   <div className="gift-modal__fixed-amount">
                     <span>Monto a registrar</span>
-                    <strong>${selectedGift.suggestedAmount.toLocaleString('es-AR')}</strong>
+                    <strong>{formatMoney(selectedGift.suggestedAmount, selectedGift.currency)}</strong>
                   </div>
                 )}
 
@@ -565,7 +672,7 @@ export default function GiftsPage() {
                 </label>
 
                 <button className="primary-button" type="submit">
-                  Ya pague este regalo
+                  Ya pagué este regalo
                 </button>
 
                 <p className="form-feedback" role="status" aria-live="polite">{status ?? ''}</p>
