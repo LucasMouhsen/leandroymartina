@@ -1012,8 +1012,15 @@ export function WeddingProvider({ children }) {
       return validation
     }
 
-    if (!supabase || !state.weddingEvent.id) {
+    if (!supabase) {
       return { ok: false, message: 'Supabase no esta configurado.' }
+    }
+
+    let eventId = state.weddingEvent.id
+    if (!eventId) {
+      const { data: event, error: eventError } = await supabase.from('events').select('id').limit(1).maybeSingle()
+      if (eventError || !event) return { ok: false, message: 'No se pudo cargar el evento. Reintenta en unos segundos.' }
+      eventId = event.id
     }
 
     const token = createToken()
@@ -1029,7 +1036,7 @@ export function WeddingProvider({ children }) {
       }))
     const primaryMember = derivePrimaryMember(members)
     const { data: inserted, error } = await supabase.from('invitations').insert({
-      event_id: state.weddingEvent.id,
+      event_id: eventId,
       display_label: validation.cleanedLabel,
       category: payload.category ?? 'otros',
       invitation_mode: validation.invitationMode,
@@ -1230,6 +1237,24 @@ export function WeddingProvider({ children }) {
     })
   }, [refreshRemoteState, session?.user?.email, state.inviteDeliveries])
 
+  const deleteInvitation = useCallback(async (invitationId) => {
+    if (!supabase) return { ok: false, message: 'Supabase no esta configurado.' }
+
+    const { data, error } = await supabase
+      .from('invitations')
+      .delete()
+      .eq('id', invitationId)
+      .select('id')
+
+    if (error || !data?.length) {
+      return { ok: false, message: error?.message ?? 'No se pudo eliminar la invitacion.' }
+    }
+
+    issuedTokensRef.current.delete(invitationId)
+    await refreshRemoteState()
+    return { ok: true }
+  }, [refreshRemoteState])
+
   const setInvitationAccess = useCallback(async (invitationId, accessStatus) => {
     if (!supabase) return
     await supabase.from('invitations').update({ access_status: accessStatus }).eq('id', invitationId)
@@ -1383,6 +1408,7 @@ export function WeddingProvider({ children }) {
       exportGuests,
       recordDelivery,
       confirmDelivery,
+      deleteInvitation,
       setInvitationAccess,
       regenerateInvitationToken,
       uploadPublicFile,
@@ -1421,6 +1447,7 @@ export function WeddingProvider({ children }) {
       exportGuests,
       recordDelivery,
       confirmDelivery,
+      deleteInvitation,
       setInvitationAccess,
       regenerateInvitationToken,
       uploadPublicFile,

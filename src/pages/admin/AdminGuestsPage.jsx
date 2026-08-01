@@ -78,7 +78,7 @@ function invitationModeLabel(mode) {
 }
 
 export default function AdminGuestsPage() {
-  const { addGuest, exportGuests, getResponseByInvitation, importGuests, invitations } = useWedding()
+  const { addGuest, deleteInvitation, exportGuests, getResponseByInvitation, importGuests, invitations } = useWedding()
   const [importResult, setImportResult] = useState('')
   const [submitStatus, setSubmitStatus] = useState(null)
   const [filter, setFilter] = useState('todos')
@@ -324,7 +324,16 @@ export default function AdminGuestsPage() {
       return
     }
 
-    const result = await addGuest(values)
+    let result
+    try {
+      result = await addGuest(values)
+    } catch {
+      setSubmitStatus({
+        type: 'error',
+        message: 'No se pudo guardar la invitacion. Revisa tu conexion e intenta nuevamente.',
+      })
+      return
+    }
 
     if (!result.ok) {
       setSubmitStatus({
@@ -352,6 +361,21 @@ export default function AdminGuestsPage() {
     const result = await importGuests(file)
     setImportResult(`Importados ${result.importedInvitations} grupos y ${result.importedGuests} integrantes.`)
     event.target.value = ''
+  }
+
+  const handleDeleteInvitation = async (invitation) => {
+    const confirmed = window.confirm(
+      `Vas a eliminar la invitacion de ${invitation.displayLabel}. Tambien se eliminaran sus integrantes, RSVP y actividad asociada. Esta accion no se puede deshacer.`,
+    )
+
+    if (!confirmed) return
+
+    const result = await deleteInvitation(invitation.id)
+    setSubmitStatus(
+      result.ok
+        ? { type: 'success', message: `La invitacion de ${invitation.displayLabel} fue eliminada.` }
+        : { type: 'error', message: result.message },
+    )
   }
 
   return (
@@ -507,7 +531,7 @@ export default function AdminGuestsPage() {
             </>
           )}
 
-          <button className="primary-button" type="submit">
+          <button className="primary-button" type="button" onClick={() => void onSubmit()}>
             {invitationMode === 'individual' ? 'Agregar invitacion individual' : 'Agregar grupo'}
           </button>
         </form>
@@ -546,6 +570,7 @@ export default function AdminGuestsPage() {
               <th>Cupo</th>
               <th>Estado RSVP</th>
               <th>Estado envio</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -567,6 +592,11 @@ export default function AdminGuestsPage() {
                   <td>{invitation.allowedSeats}</td>
                   <td>{response?.status ?? 'sin_respuesta'}</td>
                   <td>{invitation.deliveryStatus}</td>
+                  <td>
+                    <button className="secondary-button" type="button" onClick={() => handleDeleteInvitation(invitation)}>
+                      Eliminar
+                    </button>
+                  </td>
                 </tr>
               )
             })}
@@ -621,6 +651,9 @@ export default function AdminGuestsPage() {
                   <span>Envio</span>
                   <strong>{invitation.deliveryStatus}</strong>
                 </div>
+                <button className="secondary-button" type="button" onClick={() => handleDeleteInvitation(invitation)}>
+                  Eliminar invitacion
+                </button>
               </article>
             )
           })}
