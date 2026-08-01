@@ -659,8 +659,16 @@ export function WeddingProvider({ children }) {
 
   const fetchInvitationByToken = useCallback(async (token) => {
     if (!token) return null
+
+    let timeoutId
     try {
-      const result = await invokeWeddingFunction('guest-invitation', { action: 'read', token })
+      const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error('invitation_request_timeout')), 15_000)
+      })
+      const result = await Promise.race([
+        invokeWeddingFunction('guest-invitation', { action: 'read', token }),
+        timeout,
+      ])
       if (!result?.invitation) return null
       const invitation = mapInvitation(result.invitation)
       const response = asArray(invitation.rsvp_responses)[0]
@@ -671,6 +679,8 @@ export function WeddingProvider({ children }) {
       }
     } catch {
       return null
+    } finally {
+      window.clearTimeout(timeoutId)
     }
   }, [state.weddingEvent.rsvpDeadline])
 
