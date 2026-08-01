@@ -10,7 +10,10 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "Método no permitido." }, 405);
 
   const { action, token, payload } = await request.json();
-  if (typeof token !== "string" || token.length < 24) return json({ error: "El enlace no es válido." }, 404);
+  // Accept legacy long tokens and the new seven-character base64url tokens.
+  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{7,128}$/.test(token)) {
+    return json({ error: "El enlace no es válido." }, 404);
+  }
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: invitation, error } = await admin
