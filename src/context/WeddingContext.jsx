@@ -10,7 +10,7 @@ import { initialWeddingState } from '../data/initialState.js'
 import { invokeWeddingFunction, isSupabaseConfigured, supabase } from '../lib/supabase.js'
 
 const STORAGE_KEY = 'wedding-hub-state-v1'
-const PUBLIC_SITE_URL = 'https://lucasmouhsen.github.io/leandroymartina'
+const PUBLIC_SITE_URL = 'https://www.leandroymartina.com.ar'
 
 const WeddingContext = createContext(null)
 
