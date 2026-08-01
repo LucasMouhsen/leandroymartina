@@ -258,16 +258,16 @@ export default function AdminDeliveriesPage() {
 
   const renderActions = (invitation) => (
     <div className="delivery-actions">
-      <button className="secondary-button" type="button" onClick={() => openWhatsApp(invitation)}>
+      <button className="secondary-button" type="button" onClick={() => openWhatsApp(invitation)} disabled={!invitation.token}>
         Preparar WhatsApp
       </button>
-      <button className="secondary-button" type="button" onClick={() => copyEmailMessage(invitation)}>
+      <button className="secondary-button" type="button" onClick={() => copyEmailMessage(invitation)} disabled={!invitation.token}>
         Copiar email
       </button>
-      <button className="secondary-button" type="button" onClick={() => copyLink(invitation)}>
+      <button className="secondary-button" type="button" onClick={() => copyLink(invitation)} disabled={!invitation.token}>
         Copiar invitacion
       </button>
-      <button className="secondary-button" type="button" onClick={() => copyLink(invitation, 'rsvp')}>
+      <button className="secondary-button" type="button" onClick={() => copyLink(invitation, 'rsvp')} disabled={!invitation.token}>
         Copiar RSVP
       </button>
       <button className="secondary-button" type="button" onClick={() => toggleInvitationAccess(invitation)}>

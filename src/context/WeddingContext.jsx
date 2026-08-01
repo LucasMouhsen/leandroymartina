@@ -1139,7 +1139,7 @@ export function WeddingProvider({ children }) {
 
   const recordDelivery = useCallback(async (invitationId, payload) => {
     if (!supabase) return null
-    const { data, error } = await supabase.from('invite_deliveries').insert({
+    const { data, error } = await supabase.from('invite_deliveries').upsert({
       invitation_id: invitationId,
       channel: payload.channel,
       type: payload.type,
@@ -1148,7 +1148,7 @@ export function WeddingProvider({ children }) {
       message: payload.message ?? '',
       invite_link: payload.inviteLink ?? '',
       operator_id: session?.user?.id ?? null,
-    }).select().single()
+    }, { onConflict: 'invitation_id' }).select().single()
     if (error) return null
     await refreshRemoteState()
     return data
