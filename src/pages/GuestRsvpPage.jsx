@@ -318,7 +318,7 @@ export default function GuestRsvpPage() {
 
           <div className="rsvp-submit-area">
             <button className="primary-button rsvp-submit-button" type="submit" disabled={isDeadlineClosed}>
-              <span>{attending === 'no' ? 'Confirmar que no asistiremos' : 'Confirmar asistencia'}</span>
+              <span className="rsvp-submit-span">{attending === 'no' ? 'Confirmar que no asistiremos' : 'Confirmar asistencia'}</span>
               <span aria-hidden="true">&#8594;</span>
             </button>
             <p role="status" aria-live="polite">

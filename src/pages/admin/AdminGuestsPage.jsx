@@ -66,11 +66,37 @@ function invitationModeLabel(mode) {
   return mode === 'individual' ? 'Individual' : 'Grupo'
 }
 
+function invitationVisualStatus(invitation, response) {
+  if (invitation.accessStatus === 'paused') return 'paused'
+  if (response?.status === 'confirmado') return 'confirmed'
+  if (response?.status === 'rechazado') return 'declined'
+  return 'pending'
+}
+
+function matchesInvitationSearch(invitation, searchTerm) {
+  if (!searchTerm) return true
+
+  const searchableText = [
+    invitation.displayLabel,
+    invitation.category,
+    invitation.token,
+    invitation.primaryContactPhone,
+    ...(invitation.members ?? []).flatMap((member) => [
+      member.firstName,
+      member.lastName,
+      member.phone,
+    ]),
+  ].filter(Boolean).join(' ').toLocaleLowerCase()
+
+  return searchableText.includes(searchTerm)
+}
+
 export default function AdminGuestsPage() {
   const { addGuest, deleteInvitation, exportGuests, getResponseByInvitation, importGuests, invitations } = useWedding()
   const [importResult, setImportResult] = useState('')
   const [submitStatus, setSubmitStatus] = useState(null)
   const [filter, setFilter] = useState('todos')
+  const [search, setSearch] = useState('')
   const form = useForm({
     defaultValues: {
       invitationMode: 'group',
@@ -116,10 +142,14 @@ export default function AdminGuestsPage() {
     name: 'members',
   })
 
-  const filteredInvitations = useMemo(
-    () => invitations.filter((invitation) => filter === 'todos' || invitation.category === filter),
-    [filter, invitations],
-  )
+  const filteredInvitations = useMemo(() => {
+    const searchTerm = search.trim().toLocaleLowerCase()
+
+    return invitations.filter((invitation) => (
+      (filter === 'todos' || invitation.category === filter)
+      && matchesInvitationSearch(invitation, searchTerm)
+    ))
+  }, [filter, invitations, search])
 
   const resetForm = () =>
     reset({
@@ -514,6 +544,16 @@ export default function AdminGuestsPage() {
         <button type="button" onClick={() => setFilter('otros')}>Otros</button>
       </div>
 
+      <label className="admin-guest-search">
+        <span>Buscar invitación</span>
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Nombre, grupo o WhatsApp"
+        />
+      </label>
+
       <div className="table-card admin-table-desktop">
         <table>
           <thead>
@@ -533,9 +573,10 @@ export default function AdminGuestsPage() {
             {filteredInvitations.map((invitation) => {
               const response = getResponseByInvitation(invitation.id)
               const primaryMember = invitation.members?.find((member) => member.isPrimary) ?? invitation.members?.[0]
+              const visualStatus = invitationVisualStatus(invitation, response)
 
               return (
-                <tr key={invitation.id}>
+                <tr className={`admin-invitation-row is-${visualStatus}`} key={invitation.id}>
                   <td>
                     <strong>{invitation.displayLabel}</strong>
                     <br />
@@ -565,9 +606,10 @@ export default function AdminGuestsPage() {
           {filteredInvitations.map((invitation) => {
             const response = getResponseByInvitation(invitation.id)
             const primaryMember = invitation.members?.find((member) => member.isPrimary) ?? invitation.members?.[0]
+            const visualStatus = invitationVisualStatus(invitation, response)
 
             return (
-              <article className="admin-mobile-card" key={invitation.id}>
+              <article className={`admin-mobile-card is-${visualStatus}`} key={invitation.id}>
                 <div className="admin-mobile-card__header">
                   <p className="admin-mobile-card__title">{invitation.displayLabel}</p>
                   <code>{invitation.token ?? 'Token protegido'}</code>

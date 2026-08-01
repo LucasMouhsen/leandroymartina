@@ -1092,6 +1092,26 @@ body {
   min-width: 0;
 }
 
+.admin-mobile-card.is-pending {
+  background: #fffaf0;
+  border-color: #e7d8aa;
+}
+
+.admin-mobile-card.is-confirmed {
+  background: #f1f6ec;
+  border-color: #b6caa7;
+}
+
+.admin-mobile-card.is-declined {
+  background: #fff2ed;
+  border-color: #e5b9a9;
+}
+
+.admin-mobile-card.is-paused {
+  background: #f1f1ef;
+  border-color: #cfcfca;
+}
+
 .admin-mobile-card__header {
   display: grid;
   gap: 0.25rem;
@@ -1165,6 +1185,44 @@ code {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
+}
+
+.admin-guest-search {
+  display: grid;
+  gap: 0.42rem;
+  max-width: 30rem;
+  margin: 1.1rem 0;
+}
+
+.admin-guest-search span {
+  color: var(--olive-deep);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-guest-search input {
+  width: 100%;
+}
+
+.admin-invitation-row td {
+  transition: background-color 180ms ease;
+}
+
+.admin-invitation-row.is-pending td {
+  background: #fffaf0;
+}
+
+.admin-invitation-row.is-confirmed td {
+  background: #f1f6ec;
+}
+
+.admin-invitation-row.is-declined td {
+  background: #fff2ed;
+}
+
+.admin-invitation-row.is-paused td {
+  background: #f1f1ef;
 }
 
 .admin-sidebar__logout,
@@ -2102,7 +2160,8 @@ td code,
 
 .rsvp-submit-area { display: grid; gap: 0.55rem; padding-top: 0.25rem; }
 .rsvp-submit-button { display: flex; min-height: 3.5rem; align-items: center; justify-content: space-between; padding: 0.75rem 1.2rem 0.75rem 1.35rem; box-shadow: 0 12px 24px rgba(79, 92, 66, 0.18); font-weight: 700; }
-.rsvp-submit-button > span:last-child { min-height: auto; color: inherit; font-size: 1.4rem; line-height: 1; }
+.rsvp-submit-button > span:last-child { min-height: auto; color: #fff; font-size: 1.4rem; line-height: 1; }
+.rsvp-submit-button > .rsvp-submit-span { color: #fff; }
 .rsvp-submit-area p { min-height: 1.2rem; margin: 0; color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
 
 @media (max-width: 600px) {
