@@ -538,16 +538,6 @@ const mapResponse = (item) => ({
   })),
 })
 
-async function hashToken(token) {
-  const cryptoApi = globalThis.crypto
-  if (!cryptoApi?.subtle || !globalThis.TextEncoder) {
-    throw new Error('Este navegador no puede generar enlaces seguros. Actualizalo e intenta nuevamente.')
-  }
-
-  const bytes = new Uint8Array(await cryptoApi.subtle.digest('SHA-256', new TextEncoder().encode(token)))
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
 export function WeddingProvider({ children }) {
   const [state, setState] = useState(loadState)
   const [session, setSession] = useState(null)
@@ -1029,7 +1019,6 @@ export function WeddingProvider({ children }) {
     }
 
     try {
-      const token = createToken()
       const members = validation.members
         .filter((member) => member.firstName)
         .map((member, index) => ({
@@ -1041,20 +1030,21 @@ export function WeddingProvider({ children }) {
           isPrimary: index === validation.primaryIndex,
         }))
       const primaryMember = derivePrimaryMember(members)
-      const { data: inserted, error } = await supabase.from('invitations').insert({
-        event_id: eventId,
-        display_label: validation.cleanedLabel,
-        category: payload.category ?? 'otros',
-        invitation_mode: validation.invitationMode,
-        token_hash: await hashToken(token),
-        allowed_seats: validation.allowedSeats,
-        notes: payload.notes ?? '',
-        primary_contact_first_name: primaryMember?.firstName ?? '',
-        primary_contact_last_name: primaryMember?.lastName ?? '',
-        primary_contact_email: primaryMember?.email ?? '',
-        primary_contact_phone: primaryMember?.phone ?? '',
-      }).select().single()
-      if (error || !inserted) return { ok: false, message: error?.message ?? 'No se pudo crear la invitacion.' }
+      const { data: created, error } = await supabase.rpc('create_invitation_with_token', {
+        p_event_id: eventId,
+        p_display_label: validation.cleanedLabel,
+        p_category: payload.category ?? 'otros',
+        p_invitation_mode: validation.invitationMode,
+        p_allowed_seats: validation.allowedSeats,
+        p_notes: payload.notes ?? '',
+        p_primary_contact_first_name: primaryMember?.firstName ?? '',
+        p_primary_contact_last_name: primaryMember?.lastName ?? '',
+        p_primary_contact_email: primaryMember?.email ?? '',
+        p_primary_contact_phone: primaryMember?.phone ?? '',
+      }).single()
+      const inserted = created?.invitation
+      const token = created?.token
+      if (error || !inserted || !token) return { ok: false, message: error?.message ?? 'No se pudo crear la invitacion.' }
 
       const { error: membersError } = await supabase.from('invitation_members').insert(members.map((member) => ({
         invitation_id: inserted.id,
@@ -1292,11 +1282,9 @@ export function WeddingProvider({ children }) {
 
   const regenerateInvitationToken = useCallback(async (invitationId) => {
     if (!supabase) return null
-    const token = createToken()
-    const { error } = await supabase.from('invitations').update({
-      token_hash: await hashToken(token),
-      access_status: 'active',
-    }).eq('id', invitationId)
+    const { data: token, error } = await supabase.rpc('regenerate_invitation_token', {
+      p_invitation_id: invitationId,
+    })
     if (error) return null
     issuedTokensRef.current.set(invitationId, token)
     await refreshRemoteState()
