@@ -110,7 +110,15 @@ function getAccessStatusMeta(accessStatus) {
     : { label: 'Activo', tone: 'active' }
 }
 
-function getInvitationDeliveryStatusMeta(deliveryStatus, pendingDelivery) {
+function getInvitationDeliveryStatusMeta(deliveryStatus, pendingDelivery, rsvpStatus) {
+  if (rsvpStatus === 'confirmado') {
+    return { label: 'RSVP confirmado', tone: 'confirmed', filter: 'responded' }
+  }
+
+  if (rsvpStatus === 'rechazado') {
+    return { label: 'No asiste', tone: 'rejected', filter: 'not_attending' }
+  }
+
   if (pendingDelivery) return { label: 'Por confirmar', tone: 'attention', filter: 'needs_confirmation' }
 
   switch (String(deliveryStatus ?? 'pendiente').toLowerCase()) {
@@ -128,6 +136,7 @@ export default function AdminDeliveriesPage() {
     buildInviteMessage,
     buildRsvpLink,
     confirmDelivery,
+    getResponseByInvitation,
     invitations,
     inviteDeliveries,
     recordDelivery,
@@ -180,10 +189,11 @@ export default function AdminDeliveriesPage() {
     return invitations
       .map((invitation) => {
         const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
+        const response = getResponseByInvitation(invitation.id)
         return {
           invitation,
           accessMeta: getAccessStatusMeta(invitation.accessStatus),
-          deliveryMeta: getInvitationDeliveryStatusMeta(invitation.deliveryStatus, pendingDelivery),
+          deliveryMeta: getInvitationDeliveryStatusMeta(invitation.deliveryStatus, pendingDelivery, response?.status),
         }
       })
       .filter(({ invitation, deliveryMeta }) => {
@@ -197,7 +207,7 @@ export default function AdminDeliveriesPage() {
 
         return matchesStatus && matchesSearch
       })
-  }, [invitationSearch, invitationStatusFilter, invitations, pendingDeliveryByInvitation])
+  }, [getResponseByInvitation, invitationSearch, invitationStatusFilter, invitations, pendingDeliveryByInvitation])
 
   const ensureInvitationToken = async (invitation) => {
     if (invitation.token && invitation.accessStatus !== 'paused') {
