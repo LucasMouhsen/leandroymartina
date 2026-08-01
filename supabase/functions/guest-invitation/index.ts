@@ -41,10 +41,15 @@ Deno.serve(async (request) => {
     comments: String(payload?.comments ?? "").slice(0, 300),
   }, { onConflict: "invitation_id" }).select().single();
   if (responseError) return json({ error: "No se pudo guardar la respuesta." }, 500);
-  await admin.from("rsvp_attendees").delete().eq("response_id", response.id);
-  if (attendees.length) await admin.from("rsvp_attendees").insert(attendees.map((item: { memberId?: string; type?: string; name?: string; attending?: boolean; dietaryRestrictions?: string }) => ({
+  const { error: deleteAttendeesError } = await admin.from("rsvp_attendees").delete().eq("response_id", response.id);
+  if (deleteAttendeesError) return json({ error: "No se pudieron actualizar los asistentes." }, 500);
+  if (attendees.length) {
+    const { error: attendeesError } = await admin.from("rsvp_attendees").insert(attendees.map((item: { memberId?: string; type?: string; name?: string; attending?: boolean; dietaryRestrictions?: string }) => ({
     response_id: response.id, member_id: item.memberId || null, attendee_type: item.type === "companion" ? "companion" : "member", name: String(item.name || "").slice(0, 120), attending: attending && Boolean(item.attending), dietary_restrictions: String(item.dietaryRestrictions || "").slice(0, 200),
-  })));
-  await admin.from("invitations").update({ delivery_status: attending ? "respondida" : "rechazada" }).eq("id", invitation.id);
+    })));
+    if (attendeesError) return json({ error: "No se pudieron guardar los asistentes." }, 500);
+  }
+  const { error: invitationError } = await admin.from("invitations").update({ delivery_status: attending ? "respondida" : "rechazada" }).eq("id", invitation.id);
+  if (invitationError) return json({ error: "La respuesta se guardó, pero no se pudo actualizar la invitación." }, 500);
   return json({ ok: true });
 });

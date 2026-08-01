@@ -725,7 +725,6 @@ export function WeddingProvider({ children }) {
         payload,
       })
       if (!result?.ok) return { ok: false, message: result?.error ?? 'No se pudo guardar la respuesta.' }
-      await refreshRemoteState()
       return { ok: true }
     } catch {
       return { ok: false, message: 'No se pudo guardar la respuesta. Intenta nuevamente.' }
@@ -842,7 +841,7 @@ export function WeddingProvider({ children }) {
     })
 
     return { ok: true }
-  }, [getInvitationByToken, refreshRemoteState, state.weddingEvent.rsvpDeadline])
+  }, [getInvitationByToken, state.weddingEvent.rsvpDeadline])
 
   const submitGiftContribution = useCallback(async (payload) => {
     const now = new Date().toISOString()
