@@ -300,11 +300,11 @@ function buildInviteMessage(name, link) {
 Hola ${name},
 queremos invitarte a compartir uno de los momentos mas importantes de nuestras vidas \ud83d\udc8d
 
-\ud83d\udc70\u200d\u2640\ufe0f Martina & \ud83e\udd35\u200d\u2642\ufe0f Leandro
-
 Preparamos una invitacion especial con toda la informacion del evento, confirmacion de asistencia, regalos y mas:
 
 \ud83d\udd17 ${link}
+
+Por favor, confirma tu asistencia hasta el 20 de agosto.
 
 Esperamos poder celebrar este dia con vos \u2764\ufe0f`
 }
