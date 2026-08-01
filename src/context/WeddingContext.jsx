@@ -550,20 +550,14 @@ export function WeddingProvider({ children }) {
     if (!supabase) return
 
     const { data: event } = await supabase.from('events').select('*').limit(1).maybeSingle()
-    // Auth state changes asynchronously after sign-in. Resolve the persisted
-    // session too, so an immediately-created invitation is not hidden from
-    // the panel during that first refresh.
-    const { data: authData } = session?.user ? { data: { session } } : await supabase.auth.getSession()
-    const isAdmin = Boolean(authData.session?.user)
     const [messagesResult, songsResult, invitationsResult, deliveriesResult] = await Promise.all([
       supabase.from('guest_messages').select('*').order('created_at', { ascending: false }),
       supabase.from('song_suggestions').select('*').order('created_at', { ascending: false }),
-      isAdmin
-        ? supabase.from('invitations').select('*, invitation_members(*), rsvp_responses(*, rsvp_attendees(*))').order('created_at', { ascending: false })
-        : Promise.resolve({ data: [] }),
-      isAdmin
-        ? supabase.from('invite_deliveries').select('*').order('created_at', { ascending: false })
-        : Promise.resolve({ data: [] }),
+      // These tables have admin-only RLS policies. Query them unconditionally
+      // so Supabase's persisted auth token, rather than React timing, decides
+      // whether rows are returned.
+      supabase.from('invitations').select('*, invitation_members(*), rsvp_responses(*, rsvp_attendees(*))').order('created_at', { ascending: false }),
+      supabase.from('invite_deliveries').select('*').order('created_at', { ascending: false }),
     ])
 
     const nextInvitations = (invitationsResult.data ?? []).map((item) => ({
@@ -610,7 +604,7 @@ export function WeddingProvider({ children }) {
         createdAt: delivery.created_at,
       })),
     }))
-  }, [session])
+  }, [])
 
   useEffect(() => {
     if (!supabase) return undefined
