@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import SecondaryFooterNav from '../../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../../context/useWedding.jsx'
 
@@ -12,7 +13,17 @@ const links = [
 ]
 
 export default function AdminLayout() {
-  const { logout, session } = useWedding()
+  const { logout, refreshRemoteState, session } = useWedding()
+  const location = useLocation()
+
+  useEffect(() => {
+    void refreshRemoteState()
+    const refreshInterval = window.setInterval(() => {
+      void refreshRemoteState()
+    }, 30_000)
+
+    return () => window.clearInterval(refreshInterval)
+  }, [location.pathname, refreshRemoteState])
 
   return (
     <div className="admin-shell">
