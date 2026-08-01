@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import EventFeatureHero from '../components/EventFeatureHero.jsx'
 import { useWedding } from '../context/useWedding.jsx'
-import { getMercadoPagoGiftLink } from '../data/mercadoPagoGiftLinks.js'
 
 const asset = (path) => `${import.meta.env.BASE_URL}${path}`
 
@@ -145,12 +144,8 @@ export default function GiftsPage() {
         ...gift,
         category: gift.category ?? classifyGift(gift.name),
         currency: gift.currency ?? inferCurrency(gift),
-        mercadoPagoPayment: getMercadoPagoGiftLink(gift.id),
       })),
-      {
-        ...freeContributionCard,
-        mercadoPagoPayment: getMercadoPagoGiftLink(freeContributionCard.id),
-      },
+      freeContributionCard,
     ],
     [giftItems],
   )
@@ -308,10 +303,6 @@ export default function GiftsPage() {
     } catch {
       setPaymentCopyStatus(`No pudimos copiar el ${label.toLowerCase()}. Mantenelo presionado para copiarlo.`)
     }
-  }
-
-  const handleMercadoPago = () => {
-    window.location.assign(selectedGift.mercadoPagoPayment.url)
   }
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -619,22 +610,6 @@ export default function GiftsPage() {
                   <p className="gift-payment-feedback" role="status" aria-live="polite">{paymentCopyStatus}</p>
                 </div>
 
-                {selectedGift.mercadoPagoPayment ? (
-                  <div className="gift-modal__mercado-pago">
-                    <button type="button" className="mercado-pago-button" onClick={handleMercadoPago}>
-                      <span className="mercado-pago-button__brand">
-                        <span className="mercado-pago-button__mark" aria-hidden="true">MP</span>
-                        <span>Mercado Pago</span>
-                      </span>
-                      <span className="mercado-pago-button__action">Pagar <span aria-hidden="true">›</span></span>
-                    </button>
-                    <small>
-                      {selectedGift.mercadoPagoPayment.hasFixedAmount
-                        ? 'El monto ya está cargado en el Link de Pago seguro de Mercado Pago.'
-                        : 'Mercado Pago te pedirá que indiques el monto del aporte.'}
-                    </small>
-                  </div>
-                ) : null}
               </div>
 
               <form className="form-card gift-modal__form" onSubmit={onSubmit}>
