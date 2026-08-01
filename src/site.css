@@ -1252,6 +1252,45 @@ td code,
   font-size: 0.86rem;
 }
 
+.delivery-status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.3rem 0.62rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.delivery-status--active,
+.delivery-status--confirmed {
+  background: rgba(127, 143, 117, 0.18);
+  color: #40513f;
+}
+
+.delivery-status--prepared {
+  background: #e4eef4;
+  color: #42677c;
+}
+
+.delivery-status--attention,
+.delivery-status--pending {
+  background: #f8ead9;
+  color: #8b563e;
+}
+
+.delivery-status--paused {
+  background: #e9e6df;
+  color: #665f56;
+}
+
+.delivery-status--rejected {
+  background: #f4dfdb;
+  color: #914c48;
+}
+
 .delivery-panel {
   display: grid;
   gap: 1.6rem;

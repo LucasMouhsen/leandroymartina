@@ -98,6 +98,24 @@ function getDeliveryMeta(delivery) {
   }
 }
 
+function getAccessStatusMeta(accessStatus) {
+  return accessStatus === 'paused'
+    ? { label: 'Pausado', tone: 'paused' }
+    : { label: 'Activo', tone: 'active' }
+}
+
+function getInvitationDeliveryStatusMeta(deliveryStatus, pendingDelivery) {
+  if (pendingDelivery) return { label: 'Requiere confirmacion', tone: 'attention' }
+
+  switch (String(deliveryStatus ?? 'pendiente').toLowerCase()) {
+    case 'respondida': return { label: 'Respondida', tone: 'confirmed' }
+    case 'rechazada': return { label: 'No asiste', tone: 'rejected' }
+    case 'enviada_whatsapp': return { label: 'Enviada por WhatsApp', tone: 'prepared' }
+    case 'enviada_email': return { label: 'Enviada por email', tone: 'prepared' }
+    default: return { label: 'Pendiente', tone: 'pending' }
+  }
+}
+
 export default function AdminDeliveriesPage() {
   const {
     buildInviteLink,
@@ -148,11 +166,18 @@ export default function AdminDeliveriesPage() {
     return pending
   }, [history])
 
-  const requireInvitationToken = (invitation) => {
-    if (invitation.token) return invitation.token
+  const ensureInvitationToken = async (invitation) => {
+    if (invitation.token && invitation.accessStatus !== 'paused') {
+      return { token: invitation.token, regenerated: false }
+    }
 
-    setFeedback(`Primero regenerá el enlace de ${invitation.displayLabel}. Después vas a poder copiarlo o enviarlo.`)
-    return null
+    const token = await regenerateInvitationToken(invitation.id)
+    if (!token) {
+      setFeedback(`No se pudo preparar un enlace para ${invitation.displayLabel}. Intenta nuevamente.`)
+      return null
+    }
+
+    return { token, regenerated: true }
   }
 
   const recordPreparation = (invitation, inviteLink, payload) => recordDelivery(invitation.id, {
@@ -161,11 +186,11 @@ export default function AdminDeliveriesPage() {
   })
 
   const copyLink = async (invitation, kind = 'invitation') => {
-    const token = requireInvitationToken(invitation)
-    if (!token) return
+    const tokenResult = await ensureInvitationToken(invitation)
+    if (!tokenResult) return
 
     try {
-      const link = kind === 'rsvp' ? buildRsvpLink(token) : buildInviteLink(token)
+      const link = kind === 'rsvp' ? buildRsvpLink(tokenResult.token) : buildInviteLink(tokenResult.token)
       await copyText(link)
       await recordPreparation(invitation, link, {
         channel: 'link',
@@ -174,18 +199,20 @@ export default function AdminDeliveriesPage() {
         recipient: contactName(invitation),
         message: kind === 'rsvp' ? 'Link directo de RSVP copiado.' : 'Link de invitacion copiado.',
       })
-      setFeedback(`Link ${kind === 'rsvp' ? 'directo de RSVP' : 'de invitacion'} copiado para ${invitation.displayLabel}.`)
+      setFeedback(`${tokenResult.regenerated ? 'Se genero un enlace nuevo y se c' : 'C'}opio el link ${kind === 'rsvp' ? 'directo de RSVP' : 'de invitacion'} para ${invitation.displayLabel}.`)
     } catch {
-      setFeedback('No se pudo copiar automaticamente. Proba en un navegador con permisos de portapapeles.')
+      const link = kind === 'rsvp' ? buildRsvpLink(tokenResult.token) : buildInviteLink(tokenResult.token)
+      window.prompt('Copia el enlace:', link)
+      setFeedback('El enlace esta listo para copiar desde el cuadro que se abrio.')
     }
   }
 
   const copyEmailMessage = async (invitation) => {
-    const token = requireInvitationToken(invitation)
-    if (!token) return
+    const tokenResult = await ensureInvitationToken(invitation)
+    if (!tokenResult) return
 
     try {
-      const inviteLink = buildInviteLink(token)
+      const inviteLink = buildInviteLink(tokenResult.token)
       const message = buildInviteMessage(contactName(invitation), inviteLink)
       await copyText(message)
       await recordPreparation(invitation, inviteLink, {
@@ -195,9 +222,11 @@ export default function AdminDeliveriesPage() {
         recipient: invitation.primaryContactEmail || contactName(invitation),
         message,
       })
-      setFeedback(`Mensaje de email copiado para ${invitation.displayLabel}. Confirma el envio cuando lo hayas enviado desde tu correo.`)
+      setFeedback(`${tokenResult.regenerated ? 'Se genero un enlace nuevo y se c' : 'C'}opio el mensaje de email para ${invitation.displayLabel}. Confirma el envio cuando lo hayas enviado desde tu correo.`)
     } catch {
-      setFeedback('No se pudo copiar automaticamente. Proba en un navegador con permisos de portapapeles.')
+      const inviteLink = buildInviteLink(tokenResult.token)
+      window.prompt('Copia el mensaje de email:', buildInviteMessage(contactName(invitation), inviteLink))
+      setFeedback('El mensaje esta listo para copiar desde el cuadro que se abrio.')
     }
   }
 
@@ -209,13 +238,23 @@ export default function AdminDeliveriesPage() {
       return
     }
 
-    const token = requireInvitationToken(invitation)
-    if (!token) return
+    const whatsappWindow = window.open('', '_blank')
+    const tokenResult = await ensureInvitationToken(invitation)
+    if (!tokenResult) {
+      whatsappWindow?.close()
+      return
+    }
 
-    const inviteLink = buildInviteLink(token)
+    const inviteLink = buildInviteLink(tokenResult.token)
     const message = buildInviteMessage(contactName(invitation), inviteLink).normalize('NFC')
     const params = new URLSearchParams({ phone, text: message, type: 'phone_number', app_absent: '0' })
-    window.open(`https://api.whatsapp.com/send/?${params.toString()}`, '_blank', 'noopener,noreferrer')
+    const whatsappUrl = `https://api.whatsapp.com/send/?${params.toString()}`
+    if (whatsappWindow) {
+      whatsappWindow.opener = null
+      whatsappWindow.location.replace(whatsappUrl)
+    } else {
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
+    }
     await recordPreparation(invitation, inviteLink, {
       channel: 'whatsapp',
       type: 'whatsapp_composer_opened',
@@ -223,7 +262,7 @@ export default function AdminDeliveriesPage() {
       recipient: phone,
       message,
     })
-    setFeedback(`WhatsApp preparado para ${invitation.displayLabel}. Confirma el envio despues de mandarlo.`)
+    setFeedback(`${tokenResult.regenerated ? 'Se genero un enlace nuevo. ' : ''}WhatsApp preparado para ${invitation.displayLabel}. Confirma el envio despues de mandarlo.`)
   }
 
   const handleConfirmDelivery = (delivery) => {
@@ -258,16 +297,16 @@ export default function AdminDeliveriesPage() {
 
   const renderActions = (invitation) => (
     <div className="delivery-actions">
-      <button className="secondary-button" type="button" onClick={() => openWhatsApp(invitation)} disabled={!invitation.token}>
+      <button className="secondary-button" type="button" onClick={() => openWhatsApp(invitation)}>
         Preparar WhatsApp
       </button>
-      <button className="secondary-button" type="button" onClick={() => copyEmailMessage(invitation)} disabled={!invitation.token}>
+      <button className="secondary-button" type="button" onClick={() => copyEmailMessage(invitation)}>
         Copiar email
       </button>
-      <button className="secondary-button" type="button" onClick={() => copyLink(invitation)} disabled={!invitation.token}>
+      <button className="secondary-button" type="button" onClick={() => copyLink(invitation)}>
         Copiar invitacion
       </button>
-      <button className="secondary-button" type="button" onClick={() => copyLink(invitation, 'rsvp')} disabled={!invitation.token}>
+      <button className="secondary-button" type="button" onClick={() => copyLink(invitation, 'rsvp')}>
         Copiar RSVP
       </button>
       <button className="secondary-button" type="button" onClick={() => toggleInvitationAccess(invitation)}>
@@ -303,12 +342,14 @@ export default function AdminDeliveriesPage() {
           <tbody>
             {invitations.map((invitation) => {
               const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
+              const accessMeta = getAccessStatusMeta(invitation.accessStatus)
+              const deliveryMeta = getInvitationDeliveryStatusMeta(invitation.deliveryStatus, pendingDelivery)
               return (
                 <tr key={invitation.id}>
                   <td><strong>{invitation.displayLabel}</strong></td>
                   <td>{invitation.primaryContactPhone || invitation.primaryContactEmail || '-'}</td>
-                  <td>{invitation.accessStatus === 'paused' ? 'Pausado' : 'Activo'}</td>
-                  <td>{pendingDelivery ? 'Requiere confirmacion' : invitation.deliveryStatus}</td>
+                  <td><span className={`delivery-status delivery-status--${accessMeta.tone}`}>{accessMeta.label}</span></td>
+                  <td><span className={`delivery-status delivery-status--${deliveryMeta.tone}`}>{deliveryMeta.label}</span></td>
                   <td>{renderActions(invitation)}</td>
                 </tr>
               )
@@ -321,6 +362,8 @@ export default function AdminDeliveriesPage() {
         <div className="admin-mobile-list">
           {invitations.map((invitation) => {
             const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
+            const accessMeta = getAccessStatusMeta(invitation.accessStatus)
+            const deliveryMeta = getInvitationDeliveryStatusMeta(invitation.deliveryStatus, pendingDelivery)
             return (
               <article className="admin-mobile-card" key={invitation.id}>
                 <div className="admin-mobile-card__header">
@@ -332,11 +375,11 @@ export default function AdminDeliveriesPage() {
                 </div>
                 <div className="admin-mobile-card__row">
                   <span>Acceso</span>
-                  <strong>{invitation.accessStatus === 'paused' ? 'Pausado' : 'Activo'}</strong>
+                  <span className={`delivery-status delivery-status--${accessMeta.tone}`}>{accessMeta.label}</span>
                 </div>
                 <div className="admin-mobile-card__row">
                   <span>Envio</span>
-                  <strong>{pendingDelivery ? 'Requiere confirmacion' : invitation.deliveryStatus}</strong>
+                  <span className={`delivery-status delivery-status--${deliveryMeta.tone}`}>{deliveryMeta.label}</span>
                 </div>
                 {renderActions(invitation)}
               </article>
