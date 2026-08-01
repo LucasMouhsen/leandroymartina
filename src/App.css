@@ -238,7 +238,7 @@
   min-height: 60vh;
   min-height: 60svh;
   overflow: hidden;
-  margin-bottom: 1rem;
+  margin-bottom: .2rem;
 }
 
 .hero-stage {
@@ -669,6 +669,7 @@
   top: 3rem;
   right: 3.25rem;
   width: min(18vw, 5.75rem);
+  z-index: 1;
 }
 
 .reception-flower img {
@@ -696,9 +697,11 @@
 }
 
 .reception-image {
+  position: relative;
   display: block;
   width: min(100%, 18.9rem);
   margin: 2.25rem auto 0;
+  z-index: 2;
 }
 
 .reception-place {
@@ -916,10 +919,10 @@
 }
 
 .personal-rsvp-kicker {
-  max-width: 18rem;
+  max-width: 20rem;
   margin: 0 0 1rem;
-  color: #7f8f75;
-  font-size: 0.78rem;
+  color: #6e5168;
+  font-size: 1rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -974,7 +977,7 @@
 
 .player:hover,
 .map-button:hover {
-  transform: translateY(-40px);
+  transform: translateY(-2px);
 }
 
 .player:active,
@@ -1393,7 +1396,7 @@
   .intro-copy p { max-width: 14.5rem; font-size: 1.12rem; line-height: 1.35; }
   .intro-flower, .save-date-card { display: none; }
 
-  .player { position: fixed; top: 6.25rem; right: 0; left: auto; z-index: 2999; width: 4rem; height: 3.75rem; padding: 0 0 0 .4375rem; border-radius: 3.75rem 0 0 3.75rem; background: #fff; box-shadow: 6px 6px 18px rgba(0, 0, 0, .3); transform: none; }
+  .player { position: fixed; top: 3.25rem; right: 0; left: auto; z-index: 2999; width: 4rem; height: 3.75rem; padding: 0 0 0 .4375rem; border-radius: 3.75rem 0 0 3.75rem; background: #fff; box-shadow: 6px 6px 18px rgba(0, 0, 0, .3); transform: none; }
   .player .icon { width: 3rem; height: 3rem; background: #c2bca2; }
   .player .icon img { width: 1.5rem; height: 1.5rem; filter: none; }
 
@@ -1443,6 +1446,9 @@
   .rsvp-copy h2 { max-width: 13rem; font-size: 1.9rem; line-height: 1.12; text-shadow: 0 0 0.6rem rgba(255, 255, 255, .92); }
   .rsvp-copy .map-button { margin-top: 1.75rem; margin-left: 1.7rem; }
   .rsvp-icon { width: 3.25rem; margin-top: 2.1rem; margin-left: 2.35rem; }
+  .personal-rsvp-kicker { max-width: 11.5rem; font-size: 0.78rem}
+  .rsvp-generic-note  { max-width: 11.5rem; font-size: 0.78rem}
+  .rsvp-confirm { text-align: center;}
 }
 
 @media (min-width: 48rem) {
@@ -1495,7 +1501,7 @@
 
   .intro-copy {
     justify-content: flex-start;
-    padding: 20.375rem 2.2rem 0;
+    padding: 21.375rem 1.2rem 0;
   }
 
   .intro-copy p {
@@ -1713,25 +1719,25 @@
   }
 
   .gift-stem--eucalyptus {
-    top: 1.45rem;
-    left: 4.8rem;
+    top: 2rem;
+    left: 5rem;
     width: 3rem;
     height: 6rem;
-    transform: rotate(-56deg);
+    transform: rotate(-40deg);
   }
 
   .gift-stem--wheat {
-    top: 1.8rem;
-    left: 3.25rem;
+    top: 1.3rem;
+    left: 5rem;
     width: 2.2rem;
     height: 7rem;
     transform: rotate(-55deg);
   }
 
   .gift-stem--mimosa {
-    top: 2rem;
-    left: 7rem;
-    width: 2.8rem;
+    top: 3.2rem;
+    left: 5rem;
+    width: 3rem;
     height: 5.2rem;
     transform: rotate(-45deg);
   }
@@ -1739,7 +1745,7 @@
   .gift-stem--cluster {
     top: 1.2rem;
     left: 8rem;
-    width: 4.2rem;
+    width: 3rem;
     transform: rotate(-38deg);
   }
 
@@ -1763,8 +1769,8 @@
   }
 
   .dress-background {
-    top: 0 !important;
-    left: 0;
+    top: 1.5rem !important;
+    left: -0.5rem !important;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -1778,7 +1784,7 @@
 
   .dress-content {
     justify-content: flex-start;
-    padding: 5.3rem 1.25rem 1.5rem 7.2rem;
+    padding: 5.3rem 0.25rem 1.5rem 5.2rem;
   }
 
   .dress-script {
@@ -1837,7 +1843,7 @@
 
   .rsvp-copy .map-button {
     margin-top: 1.55rem;
-    margin-left: 3.4rem;
+    margin-left: 2.5rem;
     font-family: var(--font-label);
   }
 
@@ -2255,7 +2261,7 @@
 
   .rsvp-copy .map-button {
     margin-top: 2rem;
-    margin-left: 4.2rem;
+    margin-left: 1rem;
     font-family: var(--font-label);
   }
 
@@ -2452,7 +2458,7 @@
 /* Narrow handsets need a slightly smaller title to keep both names visible. */
 @media (max-width: 30rem) {
   .hero-copy {
-    right: 0.4rem;
+    right: 0;
     width: 61%;
   }
 
@@ -2508,26 +2514,26 @@
   }
 
   .gift-stem--eucalyptus {
-    z-index: 3;
-    top: 0;
+    z-index: 1;
+    top: 4rem;
     left: 50%;
     width: 4.35rem;
-    transform: translateX(-50%) rotate(-10deg);
+    transform: translateX(-50%) rotate(-40deg);
   }
 
   .gift-stem--wheat {
     z-index: 2;
-    top: 3.8rem;
+    top: 3rem;
     left: 50%;
     width: 1.9rem;
-    transform: translateX(-50%) rotate(6deg);
+    transform: translateX(-50%) rotate(-40deg);
   }
 
   .gift-stem--mimosa {
-    z-index: 1;
-    top: 7.2rem;
+    z-index: 3;
+    top: 6rem;
     left: 50%;
     width: 4.1rem;
-    transform: translateX(-50%) rotate(-7deg);
+    transform: translateX(-50%) rotate(-40deg);
   }
 }

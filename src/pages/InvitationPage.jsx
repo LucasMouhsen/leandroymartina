@@ -271,11 +271,6 @@ export default function InvitationPage() {
                   <h2 className="script-heading">
                     &iexcl;Nos casamos!
                   </h2>
-                  {isPersonalInvitation ? (
-                    <p className="personal-invitation-label">
-                      Invitacion especial para {invitation.displayLabel}
-                    </p>
-                  ) : null}
                   <p>
                     Te invitamos a celebrar con nosotros el día que decimos Sí para
                     toda la vida
@@ -516,7 +511,7 @@ export default function InvitationPage() {
               {isPersonalInvitation ? (
                 <p className="personal-rsvp-kicker">Invitacion para {invitation.displayLabel}</p>
               ) : null}
-              <h2>
+              <h2 className="rsvp-confirm">
                 <span>&iexcl;Confírmanos tu</span>
                 <br />
                 <span>asistencia!</span>

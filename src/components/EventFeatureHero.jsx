@@ -16,7 +16,7 @@ export default function EventFeatureHero({
   weddingEvent,
   title,
   bannerSrc = asset('assets/optimized/hero-photo.webp'),
-  portraitSrc = asset('assets/optimized/party-photo.webp'),
+  portraitSrc = asset('assets/optimized/7c7833b6-47d2-4ec5-953e-415e800bba78.jpg'),
   portraitAlt,
   ceremony = defaultCeremony,
   reception = defaultReception,
