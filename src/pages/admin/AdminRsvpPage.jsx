@@ -59,7 +59,7 @@ export default function AdminRsvpPage() {
               return (
                 <tr key={invitation.id}>
                   <td>{invitation.displayLabel}</td>
-                  <td>{invitation.primaryContactPhone || invitation.primaryContactEmail || '-'}</td>
+                  <td>{invitation.primaryContactPhone || '-'}</td>
                   <td>{response?.status ?? 'sin_respuesta'}</td>
                   <td>{response?.attendingCount ?? '-'}</td>
                   <td>{renderAttendeeSummary(attendees, response)}</td>
@@ -86,7 +86,7 @@ export default function AdminRsvpPage() {
 
                 <div className="admin-mobile-card__row">
                   <span>Contacto</span>
-                  <strong>{invitation.primaryContactPhone || invitation.primaryContactEmail || '-'}</strong>
+                  <strong>{invitation.primaryContactPhone || '-'}</strong>
                 </div>
 
                 <div className="admin-mobile-card__row">

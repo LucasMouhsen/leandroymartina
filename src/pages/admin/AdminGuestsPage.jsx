@@ -43,18 +43,7 @@ function MemberFields({ errors, fields, form, primaryMemberIndex, removeMember }
           </label>
 
           {Number(primaryMemberIndex) === index ? (
-            <div className="form-grid two-columns">
-              <label className={errors.members?.[index]?.email ? 'has-error' : ''}>
-                Email del referente
-                <input
-                  aria-invalid={errors.members?.[index]?.email ? 'true' : 'false'}
-                  type="email"
-                  {...form.register(`members.${index}.email`)}
-                />
-                {errors.members?.[index]?.email ? (
-                  <span>{errors.members[index].email.message}</span>
-                ) : null}
-              </label>
+            <div className="form-grid">
               <label className={errors.members?.[index]?.phone ? 'has-error' : ''}>
                 WhatsApp del referente
                 <input
@@ -90,14 +79,12 @@ export default function AdminGuestsPage() {
       allowedSeats: 1,
       individualFirstName: '',
       individualLastName: '',
-      individualEmail: '',
       individualPhone: '',
       primaryMemberIndex: '0',
       members: [
         {
           firstName: '',
           lastName: '',
-          email: '',
           phone: '',
         },
       ],
@@ -142,14 +129,12 @@ export default function AdminGuestsPage() {
       allowedSeats: 1,
       individualFirstName: '',
       individualLastName: '',
-      individualEmail: '',
       individualPhone: '',
       primaryMemberIndex: '0',
       members: [
         {
           firstName: '',
           lastName: '',
-          email: '',
           phone: '',
         },
       ],
@@ -165,7 +150,6 @@ export default function AdminGuestsPage() {
         {
           firstName: '',
           lastName: '',
-          email: '',
           phone: '',
         },
       ])
@@ -174,7 +158,6 @@ export default function AdminGuestsPage() {
       setValue('allowedSeats', 1)
       setValue('individualFirstName', '')
       setValue('individualLastName', '')
-      setValue('individualEmail', '')
       setValue('individualPhone', '')
       return
     }
@@ -215,11 +198,10 @@ export default function AdminGuestsPage() {
       const members = values.members.map((member) => ({
         firstName: member.firstName?.trim() ?? '',
         lastName: member.lastName?.trim() ?? '',
-        email: member.email?.trim() ?? '',
         phone: member.phone?.trim() ?? '',
       }))
       const nonEmptyMembers = members.filter(
-        (member) => member.firstName || member.lastName || member.email || member.phone,
+        (member) => member.firstName || member.lastName || member.phone,
       )
       const primaryIndex = Number(values.primaryMemberIndex ?? 0)
       const primaryMember = members[primaryIndex]
@@ -242,7 +224,7 @@ export default function AdminGuestsPage() {
       }
 
       members.forEach((member, index) => {
-        const hasPartialContent = member.firstName || member.lastName || member.email || member.phone
+        const hasPartialContent = member.firstName || member.lastName || member.phone
 
         if (hasPartialContent && !member.firstName) {
           setError(`members.${index}.firstName`, {
@@ -261,18 +243,10 @@ export default function AdminGuestsPage() {
         hasErrors = true
       }
 
-      if (primaryMember?.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(primaryMember.email)) {
-        setError(`members.${primaryIndex}.email`, {
-          type: 'manual',
-          message: 'Ingresa un email valido.',
-        })
-        hasErrors = true
-      }
-
-      if (!primaryMember?.email && !normalizedPhone) {
+      if (!normalizedPhone) {
         setError(`members.${primaryIndex}.phone`, {
           type: 'manual',
-          message: 'Ingresa email o WhatsApp del referente.',
+          message: 'Ingresa el WhatsApp del referente.',
         })
         hasErrors = true
       } else if (normalizedPhone && normalizedPhone.length < 8) {
@@ -293,18 +267,10 @@ export default function AdminGuestsPage() {
         hasErrors = true
       }
 
-      if (values.individualEmail?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.individualEmail.trim())) {
-        setError('individualEmail', {
-          type: 'manual',
-          message: 'Ingresa un email valido.',
-        })
-        hasErrors = true
-      }
-
-      if (!values.individualEmail?.trim() && !normalizedPhone) {
+      if (!normalizedPhone) {
         setError('individualPhone', {
           type: 'manual',
-          message: 'Ingresa email o WhatsApp de la persona invitada.',
+          message: 'Ingresa el WhatsApp de la persona invitada.',
         })
         hasErrors = true
       } else if (normalizedPhone && normalizedPhone.length < 8) {
@@ -471,16 +437,7 @@ export default function AdminGuestsPage() {
                 </label>
               </div>
 
-              <div className="form-grid two-columns">
-                <label className={errors.individualEmail ? 'has-error' : ''}>
-                  Email
-                  <input
-                    aria-invalid={errors.individualEmail ? 'true' : 'false'}
-                    type="email"
-                    {...register('individualEmail')}
-                  />
-                  {errors.individualEmail ? <span>{errors.individualEmail.message}</span> : null}
-                </label>
+              <div className="form-grid">
                 <label className={errors.individualPhone ? 'has-error' : ''}>
                   WhatsApp
                   <input
@@ -521,7 +478,6 @@ export default function AdminGuestsPage() {
                   append({
                     firstName: '',
                     lastName: '',
-                    email: '',
                     phone: '',
                   })
                 }
@@ -544,7 +500,7 @@ export default function AdminGuestsPage() {
           <label className="file-field">
             Seleccionar archivo
             <input type="file" accept=".csv,.xlsx,.xls" onChange={handleImport} />
-            <small>Columnas sugeridas: grupo o etiqueta, nombre, apellido, telefono, email, categoria, cupo. Si repetis el mismo grupo en varias filas, se agrupan como integrantes.</small>
+            <small>Columnas sugeridas: grupo o etiqueta, nombre, apellido, telefono, categoria, cupo. Si repetis el mismo grupo en varias filas, se agrupan como integrantes.</small>
           </label>
           {importResult ? <p className="form-feedback">{importResult}</p> : null}
         </article>

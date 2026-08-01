@@ -123,7 +123,7 @@ function buildMembersFromGuests(guests = [], invitationId) {
       id: guest.memberId ?? guest.id ?? `member-${createToken()}`,
       firstName: guest.firstName ?? '',
       lastName: guest.lastName ?? '',
-      email: guest.email ?? '',
+      email: '',
       phone: guest.phone ?? '',
       isPrimary: guest.role === 'principal' || index === 0,
     }))
@@ -136,7 +136,7 @@ function flattenGuestsFromInvitations(invitations = []) {
       invitationId: invitation.id,
       firstName: member.firstName,
       lastName: member.lastName,
-      email: member.email,
+      email: '',
       phone: member.phone,
       inviteStatus: invitation.deliveryStatus,
       role: member.isPrimary ? 'principal' : 'acompanante',
@@ -162,7 +162,7 @@ function migrateGuestGroupsToInvitations(parsed) {
       notes: group.notes ?? '',
       primaryContactFirstName: group.primaryContactFirstName ?? primaryGuest?.firstName ?? '',
       primaryContactLastName: group.primaryContactLastName ?? primaryGuest?.lastName ?? '',
-      primaryContactEmail: group.primaryContactEmail ?? primaryGuest?.email ?? '',
+      primaryContactEmail: '',
       primaryContactPhone: group.primaryContactPhone ?? primaryGuest?.phone ?? '',
       deliveryStatus: group.deliveryStatus ?? primaryGuest?.inviteStatus ?? 'pendiente',
       createdAt: group.createdAt ?? new Date().toISOString(),
@@ -226,7 +226,7 @@ function _migrateState(parsed) {
         invitationMode: invitation.invitationMode ?? (members.length > 1 ? 'group' : 'individual'),
         primaryContactFirstName: invitation.primaryContactFirstName ?? primaryMember?.firstName ?? '',
         primaryContactLastName: invitation.primaryContactLastName ?? primaryMember?.lastName ?? '',
-        primaryContactEmail: invitation.primaryContactEmail ?? primaryMember?.email ?? '',
+        primaryContactEmail: '',
         primaryContactPhone: invitation.primaryContactPhone ?? primaryMember?.phone ?? '',
         accessStatus: invitation.accessStatus ?? 'active',
         members,
@@ -316,7 +316,6 @@ function validateInvitationPayload(payload, existingInvitations = []) {
         {
           firstName: payload.individualFirstName ?? '',
           lastName: payload.individualLastName ?? '',
-          email: payload.individualEmail ?? '',
           phone: payload.individualPhone ?? '',
         },
       ]
@@ -324,7 +323,6 @@ function validateInvitationPayload(payload, existingInvitations = []) {
   const members = rawMembers.map((member) => ({
     firstName: member.firstName?.trim() ?? '',
     lastName: member.lastName?.trim() ?? '',
-    email: member.email?.trim() ?? '',
     phone: member.phone?.trim() ?? '',
   }))
   const fallbackLabel = invitationMode === 'individual'
@@ -332,7 +330,7 @@ function validateInvitationPayload(payload, existingInvitations = []) {
     : ''
   const cleanedLabel = payload.displayLabel?.trim() || fallbackLabel
   const nonEmptyMembers = members.filter(
-    (member) => member.firstName || member.lastName || member.email || member.phone,
+    (member) => member.firstName || member.lastName || member.phone,
   )
   const primaryIndex = invitationMode === 'individual' ? 0 : Number(payload.primaryMemberIndex ?? 0)
   const primaryMember = members[primaryIndex]
@@ -379,12 +377,8 @@ function validateInvitationPayload(payload, existingInvitations = []) {
     return { ok: false, message: 'El referente debe tener nombre.' }
   }
 
-  if (primaryMember.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(primaryMember.email)) {
-    return { ok: false, message: 'Ingresa un email valido para el referente.' }
-  }
-
-  if (!primaryMember.email && !normalizedPhone) {
-    return { ok: false, message: 'Ingresa email o WhatsApp del referente.' }
+  if (!normalizedPhone) {
+    return { ok: false, message: 'Ingresa el WhatsApp del referente.' }
   }
 
   if (normalizedPhone && normalizedPhone.length < 8) {
@@ -419,7 +413,6 @@ function normalizeInvitationRows(rows) {
       row.surname ||
       ''
     const phone = row.telefono || row.celular || row.phone || ''
-    const email = row.email || row.mail || ''
     const category = row.categoria || row.category || 'otros'
     const rawSeats = Number(row.cupo_total || row.cupo || row.acompanantes || row.companions || 1)
     const displayLabel =
@@ -449,7 +442,6 @@ function normalizeInvitationRows(rows) {
           notes: row.notas || row.notes || '',
           primaryContactFirstName: firstName || 'Invitado',
           primaryContactLastName: lastName || '',
-          primaryContactEmail: email,
           primaryContactPhone: phone,
           accessStatus: 'active',
           deliveryStatus: 'pendiente',
@@ -465,7 +457,6 @@ function normalizeInvitationRows(rows) {
       id: `member-${createToken()}`,
       firstName: firstName || `Integrante ${bucket.invitation.members.length + 1}`,
       lastName: lastName || '',
-      email,
       phone,
       isPrimary: bucket.invitation.members.length === 0,
     })
@@ -517,7 +508,6 @@ const mapInvitation = (item) => ({
   allowedSeats: item.allowed_seats,
   primaryContactFirstName: item.primary_contact_first_name,
   primaryContactLastName: item.primary_contact_last_name,
-  primaryContactEmail: item.primary_contact_email,
   primaryContactPhone: item.primary_contact_phone,
   accessStatus: item.access_status,
   deliveryStatus: item.delivery_status,
@@ -1045,7 +1035,6 @@ export function WeddingProvider({ children }) {
           id: `member-${createToken()}`,
           firstName: member.firstName,
           lastName: member.lastName,
-          email: index === validation.primaryIndex ? member.email : '',
           phone: index === validation.primaryIndex ? member.phone : '',
           isPrimary: index === validation.primaryIndex,
         }))
@@ -1059,7 +1048,7 @@ export function WeddingProvider({ children }) {
         p_notes: payload.notes ?? '',
         p_primary_contact_first_name: primaryMember?.firstName ?? '',
         p_primary_contact_last_name: primaryMember?.lastName ?? '',
-        p_primary_contact_email: primaryMember?.email ?? '',
+        p_primary_contact_email: '',
         p_primary_contact_phone: primaryMember?.phone ?? '',
       }).single()
       const inserted = created?.invitation
@@ -1075,7 +1064,7 @@ export function WeddingProvider({ children }) {
         invitation_id: inserted.id,
         first_name: member.firstName,
         last_name: member.lastName,
-        email: member.email,
+        email: '',
         phone: member.phone,
         is_primary: member.isPrimary,
       })))
@@ -1120,7 +1109,6 @@ export function WeddingProvider({ children }) {
         primaryMemberIndex: invitation.members.findIndex((member) => member.isPrimary),
         individualFirstName: primary?.firstName,
         individualLastName: primary?.lastName,
-        individualEmail: primary?.email,
         individualPhone: primary?.phone,
       })
       if (result.ok) completed += 1
@@ -1143,7 +1131,6 @@ export function WeddingProvider({ children }) {
         invitacion: invitation.displayLabel,
         tipo: invitation.invitationMode ?? (invitation.members?.length > 1 ? 'group' : 'individual'),
         contacto_principal: contactName,
-        email: invitation.primaryContactEmail,
         telefono: invitation.primaryContactPhone,
         categoria: invitation.category,
         cupo_total: invitation.allowedSeats,

@@ -69,16 +69,6 @@ function getDeliveryMeta(delivery) {
     }
   }
 
-  if (delivery.type === 'email_copied') {
-    return {
-      title: 'Email copiado',
-      detail: 'El mensaje fue copiado. Falta enviarlo desde tu correo y confirmarlo aqui.',
-      tone: 'attention',
-      filter: 'needs_attention',
-      needsConfirmation: true,
-    }
-  }
-
   if (delivery.type === 'link_copied') {
     return {
       title: 'Link copiado',
@@ -207,29 +197,6 @@ export default function AdminDeliveriesPage() {
     }
   }
 
-  const copyEmailMessage = async (invitation) => {
-    const tokenResult = await ensureInvitationToken(invitation)
-    if (!tokenResult) return
-
-    try {
-      const inviteLink = buildInviteLink(tokenResult.token)
-      const message = buildInviteMessage(contactName(invitation), inviteLink)
-      await copyText(message)
-      await recordPreparation(invitation, inviteLink, {
-        channel: 'email',
-        type: 'email_copied',
-        status: 'prepared',
-        recipient: invitation.primaryContactEmail || contactName(invitation),
-        message,
-      })
-      setFeedback(`${tokenResult.regenerated ? 'Se genero un enlace nuevo y se c' : 'C'}opio el mensaje de email para ${invitation.displayLabel}. Confirma el envio cuando lo hayas enviado desde tu correo.`)
-    } catch {
-      const inviteLink = buildInviteLink(tokenResult.token)
-      window.prompt('Copia el mensaje de email:', buildInviteMessage(contactName(invitation), inviteLink))
-      setFeedback('El mensaje esta listo para copiar desde el cuadro que se abrio.')
-    }
-  }
-
   const openWhatsApp = async (invitation) => {
     const phone = normalizeWhatsAppPhone(invitation.primaryContactPhone)
 
@@ -300,9 +267,6 @@ export default function AdminDeliveriesPage() {
       <button className="secondary-button" type="button" onClick={() => openWhatsApp(invitation)}>
         Preparar WhatsApp
       </button>
-      <button className="secondary-button" type="button" onClick={() => copyEmailMessage(invitation)}>
-        Copiar email
-      </button>
       <button className="secondary-button" type="button" onClick={() => copyLink(invitation)}>
         Copiar invitacion
       </button>
@@ -347,7 +311,7 @@ export default function AdminDeliveriesPage() {
               return (
                 <tr key={invitation.id}>
                   <td><strong>{invitation.displayLabel}</strong></td>
-                  <td>{invitation.primaryContactPhone || invitation.primaryContactEmail || '-'}</td>
+                  <td>{invitation.primaryContactPhone || '-'}</td>
                   <td><span className={`delivery-status delivery-status--${accessMeta.tone}`}>{accessMeta.label}</span></td>
                   <td><span className={`delivery-status delivery-status--${deliveryMeta.tone}`}>{deliveryMeta.label}</span></td>
                   <td>{renderActions(invitation)}</td>
@@ -371,7 +335,7 @@ export default function AdminDeliveriesPage() {
                 </div>
                 <div className="admin-mobile-card__row">
                   <span>Contacto</span>
-                  <strong>{invitation.primaryContactPhone || invitation.primaryContactEmail || '-'}</strong>
+                  <strong>{invitation.primaryContactPhone || '-'}</strong>
                 </div>
                 <div className="admin-mobile-card__row">
                   <span>Acceso</span>
