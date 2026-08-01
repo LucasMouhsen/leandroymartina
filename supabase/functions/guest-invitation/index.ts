@@ -16,16 +16,28 @@ Deno.serve(async (request) => {
   }
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: invitation, error } = await admin
+  const invitationQuery = "*, invitation_members(*), rsvp_responses(*, rsvp_attendees(*)), events!inner(rsvp_deadline)";
+  let { data: invitation, error } = await admin
     .from("invitations")
-    .select("*, invitation_members(*), rsvp_responses(*, rsvp_attendees(*)), events!inner(rsvp_deadline)")
-    .eq("token_hash", await hashToken(token))
+    .select(invitationQuery)
+    .eq("access_token", token)
     .eq("access_status", "active")
     .maybeSingle();
+  // Backward compatibility for long links created before persistent short
+  // codes were added. Keeping this separate also avoids parsing tokens as a
+  // PostgREST filter expression.
+  if (!invitation && !error) {
+    ({ data: invitation, error } = await admin
+      .from("invitations")
+      .select(invitationQuery)
+      .eq("token_hash", await hashToken(token))
+      .eq("access_status", "active")
+      .maybeSingle());
+  }
   if (error || !invitation) return json({ error: "El enlace no es válido o fue pausado." }, 404);
 
   if (action === "read") {
-    return json({ invitation: { ...invitation, token: undefined, token_hash: undefined, primary_contact_email: undefined, primary_contact_phone: undefined } });
+    return json({ invitation: { ...invitation, token: undefined, access_token: undefined, token_hash: undefined, primary_contact_email: undefined, primary_contact_phone: undefined } });
   }
 
   if (action !== "submit-rsvp") return json({ error: "Acción no válida." }, 400);

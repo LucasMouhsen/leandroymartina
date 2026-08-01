@@ -510,6 +510,7 @@ const mapInvitation = (item) => ({
   primaryContactLastName: item.primary_contact_last_name,
   primaryContactPhone: item.primary_contact_phone,
   accessStatus: item.access_status,
+  token: item.access_token,
   deliveryStatus: item.delivery_status,
   createdAt: item.created_at,
   rsvp_responses: asArray(item.rsvp_responses),
@@ -538,10 +539,6 @@ export function WeddingProvider({ children }) {
   const [state, setState] = useState(loadState)
   const [session, setSession] = useState(null)
   const [isSessionLoading, setIsSessionLoading] = useState(() => Boolean(supabase))
-  // Tokens are intentionally memory-only: Supabase stores only their hash.
-  // This lets a newly created invitation be copied in the current panel session
-  // without persisting sensitive raw tokens in the browser.
-  const issuedTokensRef = useRef(new Map())
   const refreshRequestRef = useRef(0)
 
   const refreshRemoteState = useCallback(async () => {
@@ -560,10 +557,7 @@ export function WeddingProvider({ children }) {
       supabase.from('invite_deliveries').select('*').order('created_at', { ascending: false }),
     ])
 
-    const nextInvitations = (invitationsResult.data ?? []).map((item) => ({
-      ...mapInvitation(item),
-      token: issuedTokensRef.current.get(item.id),
-    }))
+    const nextInvitations = (invitationsResult.data ?? []).map(mapInvitation)
     const responses = nextInvitations.flatMap((invitation) =>
       (invitation.rsvp_responses ?? []).map(mapResponse),
     )
@@ -1090,7 +1084,6 @@ export function WeddingProvider({ children }) {
         is_primary: member.isPrimary,
       })))
       if (membersError) return { ok: false, message: 'La invitacion fue creada, pero no se pudieron guardar sus integrantes.' }
-      issuedTokensRef.current.set(inserted.id, token)
       const invitation = { ...mapInvitation({ ...inserted, invitation_members: members.map((member) => ({ ...member, first_name: member.firstName, last_name: member.lastName, is_primary: member.isPrimary })) }), token }
       await refreshRemoteState()
       return { ok: true, invitation }
@@ -1282,7 +1275,6 @@ export function WeddingProvider({ children }) {
       return { ok: false, message: error?.message ?? 'No se pudo eliminar la invitacion.' }
     }
 
-    issuedTokensRef.current.delete(invitationId)
     await refreshRemoteState()
     return { ok: true }
   }, [refreshRemoteState])
@@ -1319,7 +1311,6 @@ export function WeddingProvider({ children }) {
       p_invitation_id: invitationId,
     })
     if (error) return null
-    issuedTokensRef.current.set(invitationId, token)
     await refreshRemoteState()
     return token
 
