@@ -505,6 +505,11 @@ function enrichGift(gift, contributions) {
   }
 }
 
+function asArray(value) {
+  if (Array.isArray(value)) return value
+  return value ? [value] : []
+}
+
 const mapInvitation = (item) => ({
   ...item,
   displayLabel: item.display_label,
@@ -517,6 +522,7 @@ const mapInvitation = (item) => ({
   accessStatus: item.access_status,
   deliveryStatus: item.delivery_status,
   createdAt: item.created_at,
+  rsvp_responses: asArray(item.rsvp_responses),
   members: (item.invitation_members ?? []).map((member) => ({
     ...member,
     firstName: member.first_name,
@@ -530,7 +536,7 @@ const mapResponse = (item) => ({
   invitationId: item.invitation_id,
   attendingCount: item.attending_count,
   updatedAt: item.updated_at,
-  attendees: (item.rsvp_attendees ?? []).map((attendee) => ({
+  attendees: asArray(item.rsvp_attendees).map((attendee) => ({
     ...attendee,
     memberId: attendee.member_id,
     type: attendee.attendee_type,
@@ -545,9 +551,12 @@ export function WeddingProvider({ children }) {
   // This lets a newly created invitation be copied in the current panel session
   // without persisting sensitive raw tokens in the browser.
   const issuedTokensRef = useRef(new Map())
+  const refreshRequestRef = useRef(0)
 
   const refreshRemoteState = useCallback(async () => {
     if (!supabase) return
+
+    const requestId = ++refreshRequestRef.current
 
     const { data: event } = await supabase.from('events').select('*').limit(1).maybeSingle()
     const [messagesResult, songsResult, invitationsResult, deliveriesResult] = await Promise.all([
@@ -568,6 +577,8 @@ export function WeddingProvider({ children }) {
       (invitation.rsvp_responses ?? []).map(mapResponse),
     )
     const guests = flattenGuestsFromInvitations(nextInvitations)
+
+    if (requestId !== refreshRequestRef.current) return
 
     setState((current) => ({
       ...current,
@@ -616,7 +627,7 @@ export function WeddingProvider({ children }) {
 
   useEffect(() => {
     void refreshRemoteState()
-  }, [refreshRemoteState])
+  }, [refreshRemoteState, session])
 
   const invitations = useMemo(() => state.invitations, [state.invitations])
   const guests = useMemo(() => state.guests, [state.guests])
@@ -652,7 +663,7 @@ export function WeddingProvider({ children }) {
       const result = await invokeWeddingFunction('guest-invitation', { action: 'read', token })
       if (!result?.invitation) return null
       const invitation = mapInvitation(result.invitation)
-      const response = invitation.rsvp_responses?.[0]
+      const response = asArray(invitation.rsvp_responses)[0]
       return {
         invitation: { ...invitation, token },
         response: response ? mapResponse(response) : null,
@@ -707,8 +718,9 @@ export function WeddingProvider({ children }) {
     }
 
     setSession(data.session)
+    await refreshRemoteState()
     return { ok: true }
-  }, [])
+  }, [refreshRemoteState])
 
   const logout = useCallback(async () => {
     if (supabase) await supabase.auth.signOut()
