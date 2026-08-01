@@ -1333,6 +1333,11 @@ td code,
   color: #42677c;
 }
 
+.delivery-status--sent {
+  background: #dcecf3;
+  color: #27627c;
+}
+
 .delivery-status--attention,
 .delivery-status--pending {
   background: #f8ead9;
@@ -1434,6 +1439,55 @@ td code,
 .delivery-management__header > p {
   margin: 0;
   color: var(--muted);
+}
+
+.delivery-filters {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 0.5fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+  padding: 0.9rem;
+  border: 1px solid rgba(127, 143, 117, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.delivery-filters label {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.delivery-filters label > span {
+  color: var(--olive-deep);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.delivery-filters input,
+.delivery-filters select {
+  min-height: 2.7rem;
+  width: 100%;
+  border: 1px solid rgba(127, 143, 117, 0.26);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.delivery-filters input:focus-visible,
+.delivery-filters select:focus-visible {
+  outline: 3px solid rgba(127, 143, 117, 0.28);
+  outline-offset: 2px;
+}
+
+.delivery-filters p {
+  margin: 0 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  white-space: nowrap;
 }
 
 .delivery-management__header > p {
@@ -2235,6 +2289,15 @@ td code,
 }
 
 @media (max-width: 860px) {
+  .delivery-filters {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .delivery-filters p {
+    margin: 0;
+  }
+
   .delivery-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

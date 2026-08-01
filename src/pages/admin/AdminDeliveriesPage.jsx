@@ -8,6 +8,15 @@ const HISTORY_FILTERS = [
   { id: 'prepared', label: 'Preparados' },
 ]
 
+const INVITATION_STATUS_FILTERS = [
+  { id: 'all', label: 'Todos los estados' },
+  { id: 'not_sent', label: 'No enviadas' },
+  { id: 'needs_confirmation', label: 'Por confirmar' },
+  { id: 'sent', label: 'Enviadas' },
+  { id: 'responded', label: 'Respondidas' },
+  { id: 'not_attending', label: 'No asisten' },
+]
+
 async function copyText(text) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text)
@@ -39,6 +48,13 @@ function contactName(invitation) {
   return [invitation.primaryContactFirstName, invitation.primaryContactLastName]
     .filter(Boolean)
     .join(' ') || invitation.displayLabel
+}
+
+function normalizeText(value) {
+  return String(value ?? '')
+    .toLocaleLowerCase('es-AR')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
 }
 
 function formatDate(value) {
@@ -95,14 +111,14 @@ function getAccessStatusMeta(accessStatus) {
 }
 
 function getInvitationDeliveryStatusMeta(deliveryStatus, pendingDelivery) {
-  if (pendingDelivery) return { label: 'Requiere confirmacion', tone: 'attention' }
+  if (pendingDelivery) return { label: 'Por confirmar', tone: 'attention', filter: 'needs_confirmation' }
 
   switch (String(deliveryStatus ?? 'pendiente').toLowerCase()) {
-    case 'respondida': return { label: 'Respondida', tone: 'confirmed' }
-    case 'rechazada': return { label: 'No asiste', tone: 'rejected' }
-    case 'enviada_whatsapp': return { label: 'Enviada por WhatsApp', tone: 'prepared' }
-    case 'enviada_email': return { label: 'Enviada por email', tone: 'prepared' }
-    default: return { label: 'Pendiente', tone: 'pending' }
+    case 'respondida': return { label: 'Respondida', tone: 'confirmed', filter: 'responded' }
+    case 'rechazada': return { label: 'No asiste', tone: 'rejected', filter: 'not_attending' }
+    case 'enviada_whatsapp': return { label: 'Enviada por WhatsApp', tone: 'sent', filter: 'sent' }
+    case 'enviada_email': return { label: 'Enviada por email', tone: 'sent', filter: 'sent' }
+    default: return { label: 'No enviada', tone: 'pending', filter: 'not_sent' }
   }
 }
 
@@ -120,6 +136,8 @@ export default function AdminDeliveriesPage() {
   } = useWedding()
   const [feedback, setFeedback] = useState('')
   const [historyFilter, setHistoryFilter] = useState('all')
+  const [invitationSearch, setInvitationSearch] = useState('')
+  const [invitationStatusFilter, setInvitationStatusFilter] = useState('all')
 
   const history = useMemo(
     () => [...inviteDeliveries]
@@ -155,6 +173,31 @@ export default function AdminDeliveriesPage() {
     })
     return pending
   }, [history])
+
+  const managedInvitations = useMemo(() => {
+    const query = normalizeText(invitationSearch.trim())
+
+    return invitations
+      .map((invitation) => {
+        const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
+        return {
+          invitation,
+          accessMeta: getAccessStatusMeta(invitation.accessStatus),
+          deliveryMeta: getInvitationDeliveryStatusMeta(invitation.deliveryStatus, pendingDelivery),
+        }
+      })
+      .filter(({ invitation, deliveryMeta }) => {
+        const matchesStatus = invitationStatusFilter === 'all' || deliveryMeta.filter === invitationStatusFilter
+        const searchableValue = normalizeText([
+          invitation.displayLabel,
+          contactName(invitation),
+          invitation.primaryContactPhone,
+        ].join(' '))
+        const matchesSearch = !query || searchableValue.includes(query)
+
+        return matchesStatus && matchesSearch
+      })
+  }, [invitationSearch, invitationStatusFilter, invitations, pendingDeliveryByInvitation])
 
   const ensureInvitationToken = async (invitation) => {
     if (invitation.token && invitation.accessStatus !== 'paused') {
@@ -292,6 +335,32 @@ export default function AdminDeliveriesPage() {
         <p>Los links se pueden pausar o regenerar sin alterar las respuestas ya registradas.</p>
       </div>
 
+      <div className="delivery-filters" aria-label="Filtros de invitaciones">
+        <label>
+          <span>Buscar invitación</span>
+          <input
+            type="search"
+            value={invitationSearch}
+            onChange={(event) => setInvitationSearch(event.target.value)}
+            placeholder="Nombre o teléfono"
+          />
+        </label>
+        <label>
+          <span>Estado del envío</span>
+          <select
+            value={invitationStatusFilter}
+            onChange={(event) => setInvitationStatusFilter(event.target.value)}
+          >
+            {INVITATION_STATUS_FILTERS.map((filter) => (
+              <option key={filter.id} value={filter.id}>{filter.label}</option>
+            ))}
+          </select>
+        </label>
+        <p role="status" aria-live="polite">
+          {managedInvitations.length} {managedInvitations.length === 1 ? 'invitación encontrada' : 'invitaciones encontradas'}
+        </p>
+      </div>
+
       <div className="table-card admin-table-desktop">
         <table>
           <thead>
@@ -304,10 +373,7 @@ export default function AdminDeliveriesPage() {
             </tr>
           </thead>
           <tbody>
-            {invitations.map((invitation) => {
-              const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
-              const accessMeta = getAccessStatusMeta(invitation.accessStatus)
-              const deliveryMeta = getInvitationDeliveryStatusMeta(invitation.deliveryStatus, pendingDelivery)
+            {managedInvitations.map(({ invitation, accessMeta, deliveryMeta }) => {
               return (
                 <tr key={invitation.id}>
                   <td><strong>{invitation.displayLabel}</strong></td>
@@ -318,16 +384,23 @@ export default function AdminDeliveriesPage() {
                 </tr>
               )
             })}
+            {!managedInvitations.length ? (
+              <tr>
+                <td colSpan="5">
+                  <div className="delivery-empty">
+                    <strong>No encontramos invitaciones con estos filtros.</strong>
+                    <p>Prueba con otro nombre o estado de envío.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
 
       <div className="admin-table-mobile">
         <div className="admin-mobile-list">
-          {invitations.map((invitation) => {
-            const pendingDelivery = pendingDeliveryByInvitation.get(invitation.id)
-            const accessMeta = getAccessStatusMeta(invitation.accessStatus)
-            const deliveryMeta = getInvitationDeliveryStatusMeta(invitation.deliveryStatus, pendingDelivery)
+          {managedInvitations.map(({ invitation, accessMeta, deliveryMeta }) => {
             return (
               <article className="admin-mobile-card" key={invitation.id}>
                 <div className="admin-mobile-card__header">
@@ -349,6 +422,12 @@ export default function AdminDeliveriesPage() {
               </article>
             )
           })}
+          {!managedInvitations.length ? (
+            <div className="delivery-empty">
+              <strong>No encontramos invitaciones con estos filtros.</strong>
+              <p>Prueba con otro nombre o estado de envío.</p>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
