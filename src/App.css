@@ -1381,9 +1381,25 @@
   .intro-copy p { max-width: 14.5rem; font-size: 1.12rem; line-height: 1.35; }
   .intro-flower, .save-date-card { display: none; }
 
-  .player { position: fixed; top: 6.25rem; right: 0; left: auto; z-index: 2999; width: 4rem; height: 3.75rem; padding: 0 0 0 .4375rem; border-radius: 3.75rem 0 0 3.75rem; background: #fff; box-shadow: 6px 6px 18px rgba(0, 0, 0, .3); transform: none; }
-  .player .icon { width: 3rem; height: 3rem; background: #c2bca2; }
-  .player .icon img { width: 1.5rem; height: 1.5rem; filter: none; }
+  /* Keep the music control reachable without covering the invitation copy. */
+  .player {
+    top: auto;
+    right: max(.75rem, env(safe-area-inset-right));
+    bottom: max(.75rem, env(safe-area-inset-bottom));
+    left: auto;
+    z-index: 30;
+    justify-content: center;
+    width: 3.35rem;
+    height: 3.35rem;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 .4rem 1.2rem rgba(49, 55, 46, .22);
+    transform: none;
+  }
+
+  .player .icon { width: 2.75rem; height: 2.75rem; background: #c2bca2; }
+  .player .icon img { width: 1.35rem; height: 1.35rem; filter: none; }
 
   .ceremony-section { padding: 4.4rem 1.25rem 1.75rem; }
   .ceremony-sprig { margin-bottom: 1.45rem; }
@@ -2434,5 +2450,24 @@
   .ceremony-sprig__leaves {
     top: 1.5rem;
     width: 6.25rem !important;
+  }
+}
+
+/* Narrow handsets need a slightly smaller title to keep both names visible. */
+@media (max-width: 30rem) {
+  .hero-copy {
+    right: 0.4rem;
+    width: 61%;
+  }
+
+  .hero-title {
+    gap: 0.14rem;
+    font-size: 2.25rem;
+    line-height: 0.96;
+  }
+
+  .hero-date {
+    margin-top: 0.5rem;
+    font-size: 0.66rem;
   }
 }
