@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useWedding } from '../context/useWedding.jsx'
 
 const attendeeSchema = z.object({
@@ -43,6 +43,7 @@ function formatDeadline(deadline) {
 
 export default function GuestRsvpPage() {
   const { token } = useParams()
+  const navigate = useNavigate()
   const {
     fetchInvitationByToken,
     getRsvpAttendees,
@@ -287,23 +288,47 @@ export default function GuestRsvpPage() {
             hasta la fecha limite.
           </p>
 
-          {status ? (
+          {status?.tone === 'error' ? (
             <div
-              className={`response-alert response-alert--${status.tone}`}
-              role={status.tone === 'error' ? 'alert' : 'status'}
-              aria-live={status.tone === 'error' ? 'assertive' : 'polite'}
+              className="response-alert response-alert--error"
+              role="alert"
+              aria-live="assertive"
             >
               <span className="response-alert__icon" aria-hidden="true">
-                {status.tone === 'success' ? '✓' : '!'}
+                !
               </span>
               <div>
-                <strong>{status.tone === 'success' ? '¡Gracias por confirmar!' : 'No pudimos guardar tu respuesta'}</strong>
+                <strong>No pudimos guardar tu respuesta</strong>
                 <p>{status.message}</p>
               </div>
             </div>
           ) : null}
         </form>
       </div>
+
+      {status?.tone === 'success' ? (
+        <div className="rsvp-confirmation-modal" role="presentation">
+          <div className="rsvp-confirmation-modal__backdrop" />
+          <section
+            className="rsvp-confirmation-modal__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rsvp-confirmation-title"
+            aria-describedby="rsvp-confirmation-description"
+            onKeyDown={(event) => {
+              if (event.key === 'Tab') event.preventDefault()
+            }}
+          >
+            <span className="rsvp-confirmation-modal__icon" aria-hidden="true">✓</span>
+            <p className="feature-kicker">Confirmación guardada</p>
+            <h2 id="rsvp-confirmation-title">¡Gracias por confirmar!</h2>
+            <p id="rsvp-confirmation-description">Respuesta registrada. Los novios ya pueden verla en el panel.</p>
+            <button className="primary-button" type="button" autoFocus onClick={() => navigate(`/invitacion/${token}`)}>
+              Ver invitación
+            </button>
+          </section>
+        </div>
+      ) : null}
     </section>
   )
 }
