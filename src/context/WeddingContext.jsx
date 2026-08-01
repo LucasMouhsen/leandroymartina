@@ -1,9 +1,10 @@
-/* eslint-disable no-unreachable, react-hooks/set-state-in-effect */
+/* eslint-disable no-unreachable */
 import {
   createContext,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { initialWeddingState } from '../data/initialState.js'
@@ -545,6 +546,10 @@ async function hashToken(token) {
 export function WeddingProvider({ children }) {
   const [state, setState] = useState(loadState)
   const [session, setSession] = useState(null)
+  // Tokens are intentionally memory-only: Supabase stores only their hash.
+  // This lets a newly created invitation be copied in the current panel session
+  // without persisting sensitive raw tokens in the browser.
+  const issuedTokensRef = useRef(new Map())
 
   const refreshRemoteState = useCallback(async () => {
     if (!supabase) return
@@ -562,7 +567,10 @@ export function WeddingProvider({ children }) {
         : Promise.resolve({ data: [] }),
     ])
 
-    const nextInvitations = (invitationsResult.data ?? []).map(mapInvitation)
+    const nextInvitations = (invitationsResult.data ?? []).map((item) => ({
+      ...mapInvitation(item),
+      token: issuedTokensRef.current.get(item.id),
+    }))
     const responses = nextInvitations.flatMap((invitation) =>
       (invitation.rsvp_responses ?? []).map(mapResponse),
     )
@@ -1044,6 +1052,7 @@ export function WeddingProvider({ children }) {
       is_primary: member.isPrimary,
     })))
     if (membersError) return { ok: false, message: 'La invitacion fue creada, pero no se pudieron guardar sus integrantes.' }
+    issuedTokensRef.current.set(inserted.id, token)
     const invitation = { ...mapInvitation({ ...inserted, invitation_members: members.map((member) => ({ ...member, first_name: member.firstName, last_name: member.lastName, is_primary: member.isPrimary })) }), token }
     await refreshRemoteState()
     return { ok: true, invitation }
@@ -1255,6 +1264,7 @@ export function WeddingProvider({ children }) {
       access_status: 'active',
     }).eq('id', invitationId)
     if (error) return null
+    issuedTokensRef.current.set(invitationId, token)
     await refreshRemoteState()
     return token
 
