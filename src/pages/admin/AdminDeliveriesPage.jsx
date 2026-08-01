@@ -476,7 +476,13 @@ export default function AdminDeliveriesPage() {
         </div>
       </section>
 
-      <p className="form-feedback" aria-live="polite">{feedback}</p>
+      {feedback ? (
+        <div className="admin-toast" role="status" aria-live="polite">
+          <span aria-hidden="true">✓</span>
+          <p>{feedback}</p>
+          <button type="button" onClick={() => setFeedback('')} aria-label="Cerrar aviso">×</button>
+        </div>
+      ) : null}
     </section>
   )
 }

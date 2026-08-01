@@ -287,13 +287,21 @@ export default function GuestRsvpPage() {
             hasta la fecha limite.
           </p>
 
-          <p
-            className={`form-feedback${status ? ` is-${status.tone}` : ''}`}
-            role="status"
-            aria-live={status?.tone === 'error' ? 'assertive' : 'polite'}
-          >
-            {status?.message ?? ''}
-          </p>
+          {status ? (
+            <div
+              className={`response-alert response-alert--${status.tone}`}
+              role={status.tone === 'error' ? 'alert' : 'status'}
+              aria-live={status.tone === 'error' ? 'assertive' : 'polite'}
+            >
+              <span className="response-alert__icon" aria-hidden="true">
+                {status.tone === 'success' ? '✓' : '!'}
+              </span>
+              <div>
+                <strong>{status.tone === 'success' ? '¡Gracias por confirmar!' : 'No pudimos guardar tu respuesta'}</strong>
+                <p>{status.message}</p>
+              </div>
+            </div>
+          ) : null}
         </form>
       </div>
     </section>
