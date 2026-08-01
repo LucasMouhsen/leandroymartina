@@ -205,7 +205,7 @@ export default function AdminGuestsPage() {
     setValue('primaryMemberIndex', String(Math.min(nextPrimary, remainingCount - 1)))
   }
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = handleSubmit(async (values) => {
     clearErrors()
     const mode = values.invitationMode === 'individual' ? 'individual' : 'group'
     let hasErrors = false
@@ -324,7 +324,7 @@ export default function AdminGuestsPage() {
       return
     }
 
-    const result = addGuest(values)
+    const result = await addGuest(values)
 
     if (!result.ok) {
       setSubmitStatus({

@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import SecondaryFooterNav from '../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../context/useWedding.jsx'
+import {
+  buildFeaturePath,
+} from '../lib/invitationNavigation.js'
 
 const AUDIO_START_OFFSET = 0.5
 const ENVELOPE_OPEN_DELAY_MS = 1350
@@ -17,10 +20,24 @@ export default function InvitationPage() {
   const [audioNotice, setAudioNotice] = useState('')
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false)
   const [showInvitation, setShowInvitation] = useState(false)
-  const { getInvitationByToken, weddingEvent } = useWedding()
-  const invitation = token ? getInvitationByToken(token) : null
-  const isPersonalInvitation = Boolean(token && invitation)
-  const isInvalidPersonalInvitation = Boolean(token && !invitation)
+  const { fetchInvitationByToken, weddingEvent } = useWedding()
+  const [remoteInvitation, setRemoteInvitation] = useState(null)
+  const [isInvitationLoading, setIsInvitationLoading] = useState(Boolean(token))
+  const invitation = remoteInvitation?.invitation ?? null
+  const isPersonalInvitation = Boolean(invitation)
+  const isInvalidPersonalInvitation = Boolean(token && !isInvitationLoading && !invitation)
+
+  useEffect(() => {
+    if (!token) return undefined
+    let active = true
+    fetchInvitationByToken(token).then((result) => {
+      if (active) {
+        setRemoteInvitation(result)
+        setIsInvitationLoading(false)
+      }
+    })
+    return () => { active = false }
+  }, [fetchInvitationByToken, token])
 
   useEffect(() => {
     const audio = audioRef.current
@@ -133,6 +150,10 @@ export default function InvitationPage() {
     userPausedRef.current = true
     setAudioNotice('')
     audio.pause()
+  }
+
+  if (isInvitationLoading) {
+    return <div className="site-shell invitation-shell"><main className="invitation-invalid"><p>Cargando invitacion…</p></main></div>
   }
 
   if (isInvalidPersonalInvitation) {
@@ -493,12 +514,15 @@ export default function InvitationPage() {
                 <br />
                 <span>asistencia!</span>
               </h2>
-              <Link
-                className="map-button map-button--olive"
-                to={isPersonalInvitation ? `/confirmar/${invitation.token}` : '/mensajes'}
-              >
-                RSVP
-              </Link>
+              {isPersonalInvitation ? (
+                <Link className="map-button map-button--olive" to={`/confirmar/${invitation.token}`}>
+                  RSVP
+                </Link>
+              ) : (
+                <p className="rsvp-generic-note">
+                  Para confirmar tu asistencia, abrí el enlace que te enviamos por WhatsApp.
+                </p>
+              )}
               <img
                 className="rsvp-icon"
                 src={asset('assets/original/rsvp-icon.png')}
@@ -512,8 +536,8 @@ export default function InvitationPage() {
 
         <SecondaryFooterNav
           links={[
-            { to: '/regalos', text: 'Regalos' },
-            { to: '/mensajes', text: 'Mensajes' },
+            { to: buildFeaturePath('/regalos', invitation?.token), text: 'Regalos' },
+            { to: buildFeaturePath('/mensajes', invitation?.token), text: 'Mensajes' },
             { to: '/admin/login', text: 'Panel' },
           ]}
         />

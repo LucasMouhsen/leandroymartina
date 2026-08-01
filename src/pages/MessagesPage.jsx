@@ -11,8 +11,7 @@ const schema = z.object({
 })
 
 export default function MessagesPage() {
-  const { approvedMessages, submitMessage, uploadPublicFile, weddingEvent } = useWedding()
-  const [photoFile, setPhotoFile] = useState(null)
+  const { approvedMessages, submitMessage, weddingEvent } = useWedding()
   const [status, setStatus] = useState(null)
   const form = useForm({
     resolver: zodResolver(schema),
@@ -23,27 +22,17 @@ export default function MessagesPage() {
   })
 
   const onSubmit = form.handleSubmit(async (values) => {
-    let photo = null
-
-    if (photoFile) {
-      const uploaded = await uploadPublicFile(photoFile, 'photo')
-
-      if (!uploaded.ok) {
-        setStatus(uploaded.message)
-        return
-      }
-
-      photo = uploaded.file
-    }
-
-    await submitMessage({
+    const result = await submitMessage({
       guestName: values.guestName,
       note: values.note,
-      photo,
     })
 
+    if (!result.ok) {
+      setStatus(result.message ?? 'No se pudo enviar el mensaje.')
+      return
+    }
+
     setStatus('Tu mensaje quedo listo para revision.')
-    setPhotoFile(null)
     form.reset()
   })
 
@@ -81,16 +70,6 @@ export default function MessagesPage() {
             Mensaje
             <textarea rows="6" autoComplete="off" {...form.register('note')} />
             <span>{form.formState.errors.note?.message}</span>
-          </label>
-
-          <label className="file-field">
-            Foto opcional
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
-            />
-            <small>{photoFile ? photoFile.name : 'Imagen JPG, PNG o WEBP hasta 4 MB.'}</small>
           </label>
 
           <button className="primary-button" type="submit">

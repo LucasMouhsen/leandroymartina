@@ -1,16 +1,15 @@
+/* eslint-disable no-unreachable, react-hooks/set-state-in-effect */
 import {
   createContext,
-  startTransition,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from 'react'
 import { initialWeddingState } from '../data/initialState.js'
+import { invokeWeddingFunction, isSupabaseConfigured, supabase } from '../lib/supabase.js'
 
 const STORAGE_KEY = 'wedding-hub-state-v1'
-const SESSION_KEY = 'wedding-hub-session-v1'
-const STATE_VERSION = 5
 const PUBLIC_SITE_URL = 'https://lucasmouhsen.github.io/leandroymartina'
 
 const WeddingContext = createContext(null)
@@ -199,7 +198,7 @@ function migrateGuestGroupsToInvitations(parsed) {
   }
 }
 
-function migrateState(parsed) {
+function _migrateState(parsed) {
   let next = { ...parsed }
 
   if (!next.invitations && next.guestGroups) {
@@ -265,44 +264,15 @@ function migrateState(parsed) {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) {
-      return {
-        ...initialWeddingState,
-        stateVersion: STATE_VERSION,
-      }
-    }
-
-    const parsed = migrateState(JSON.parse(stored))
-    const merged = { ...initialWeddingState, ...parsed }
-
-    if (!parsed.stateVersion || parsed.stateVersion < 4) {
-      return {
-        ...merged,
-        giftItems: initialWeddingState.giftItems,
-        stateVersion: STATE_VERSION,
-      }
-    }
-
-    return {
-      ...merged,
-      stateVersion: STATE_VERSION,
-    }
+    // Discard the prototype cache from previous versions. Browser storage is
+    // never used as an application data source.
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem('wedding-hub-active-invitation-token')
   } catch {
-    return {
-      ...initialWeddingState,
-      stateVersion: STATE_VERSION,
-    }
+    // Storage can be unavailable in private browsing; the app still starts.
   }
-}
 
-function loadSession() {
-  try {
-    const stored = sessionStorage.getItem(SESSION_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
+  return initialWeddingState
 }
 
 async function loadPapa() {
@@ -534,22 +504,118 @@ function enrichGift(gift, contributions) {
   }
 }
 
+const mapInvitation = (item) => ({
+  ...item,
+  displayLabel: item.display_label,
+  invitationMode: item.invitation_mode,
+  allowedSeats: item.allowed_seats,
+  primaryContactFirstName: item.primary_contact_first_name,
+  primaryContactLastName: item.primary_contact_last_name,
+  primaryContactEmail: item.primary_contact_email,
+  primaryContactPhone: item.primary_contact_phone,
+  accessStatus: item.access_status,
+  deliveryStatus: item.delivery_status,
+  createdAt: item.created_at,
+  members: (item.invitation_members ?? []).map((member) => ({
+    ...member,
+    firstName: member.first_name,
+    lastName: member.last_name,
+    isPrimary: member.is_primary,
+  })),
+})
+
+const mapResponse = (item) => ({
+  ...item,
+  invitationId: item.invitation_id,
+  attendingCount: item.attending_count,
+  updatedAt: item.updated_at,
+  attendees: (item.rsvp_attendees ?? []).map((attendee) => ({
+    ...attendee,
+    memberId: attendee.member_id,
+    type: attendee.attendee_type,
+    dietaryRestrictions: attendee.dietary_restrictions,
+  })),
+})
+
+async function hashToken(token) {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)))
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
 export function WeddingProvider({ children }) {
   const [state, setState] = useState(loadState)
-  const [session, setSession] = useState(loadSession)
+  const [session, setSession] = useState(null)
+
+  const refreshRemoteState = useCallback(async () => {
+    if (!supabase) return
+
+    const { data: event } = await supabase.from('events').select('*').limit(1).maybeSingle()
+    const isAdmin = Boolean(session?.user)
+    const [messagesResult, songsResult, invitationsResult, deliveriesResult] = await Promise.all([
+      supabase.from('guest_messages').select('*').order('created_at', { ascending: false }),
+      supabase.from('song_suggestions').select('*').order('created_at', { ascending: false }),
+      isAdmin
+        ? supabase.from('invitations').select('*, invitation_members(*), rsvp_responses(*, rsvp_attendees(*))').order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+      isAdmin
+        ? supabase.from('invite_deliveries').select('*').order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+    ])
+
+    const nextInvitations = (invitationsResult.data ?? []).map(mapInvitation)
+    const responses = nextInvitations.flatMap((invitation) =>
+      (invitation.rsvp_responses ?? []).map(mapResponse),
+    )
+    const guests = flattenGuestsFromInvitations(nextInvitations)
+
+    setState((current) => ({
+      ...current,
+      weddingEvent: event
+        ? {
+            ...current.weddingEvent,
+            id: event.id,
+            couple: event.couple,
+            eventDate: event.event_date,
+            location: event.location,
+            rsvpDeadline: event.rsvp_deadline,
+            giftInstructions: event.gift_instructions,
+          }
+        : current.weddingEvent,
+      invitations: nextInvitations,
+      guests,
+      rsvpResponses: responses,
+      guestMessages: (messagesResult.data ?? []).map((message) => ({
+        ...message,
+        guestName: message.guest_name,
+        photo: message.photo_path ? { path: message.photo_path } : null,
+        createdAt: message.created_at,
+      })),
+      songSuggestions: (songsResult.data ?? []).map((song) => ({
+        ...song,
+        requestedBy: song.requested_by,
+        createdAt: song.created_at,
+      })),
+      inviteDeliveries: (deliveriesResult.data ?? []).map((delivery) => ({
+        ...delivery,
+        invitationId: delivery.invitation_id,
+        inviteLink: delivery.invite_link,
+        confirmedAt: delivery.confirmed_at,
+        createdAt: delivery.created_at,
+      })),
+    }))
+  }, [session?.user])
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  }, [state])
+    if (!supabase) return undefined
+
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession))
+    return () => listener.subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
-    if (session) {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
-      return
-    }
-
-    sessionStorage.removeItem(SESSION_KEY)
-  }, [session])
+    void refreshRemoteState()
+  }, [refreshRemoteState])
 
   const invitations = useMemo(() => state.invitations, [state.invitations])
   const guests = useMemo(() => state.guests, [state.guests])
@@ -567,7 +633,7 @@ export function WeddingProvider({ children }) {
     [state.songSuggestions],
   )
 
-  const isAuthenticated = Boolean(session?.email)
+  const isAuthenticated = Boolean(session?.user)
 
   const getInvitationByToken = useCallback(
     (token) =>
@@ -578,6 +644,23 @@ export function WeddingProvider({ children }) {
       ) ?? null,
     [invitations],
   )
+
+  const fetchInvitationByToken = useCallback(async (token) => {
+    if (!token) return null
+    try {
+      const result = await invokeWeddingFunction('guest-invitation', { action: 'read', token })
+      if (!result?.invitation) return null
+      const invitation = mapInvitation(result.invitation)
+      const response = invitation.rsvp_responses?.[0]
+      return {
+        invitation: { ...invitation, token },
+        response: response ? mapResponse(response) : null,
+        rsvpDeadline: result.invitation.events?.rsvp_deadline ?? state.weddingEvent.rsvpDeadline,
+      }
+    } catch {
+      return null
+    }
+  }, [state.weddingEvent.rsvpDeadline])
 
   const getGuestsByInvitation = useCallback(
     (invitationId) => guests.filter((guest) => guest.invitationId === invitationId),
@@ -610,26 +693,42 @@ export function WeddingProvider({ children }) {
   }, [])
 
   const login = useCallback(async ({ email, password }) => {
-    const valid =
-      email.toLowerCase() === state.adminUser.email.toLowerCase() &&
-      password === state.adminUser.password
-
-    if (!valid) {
-      return { ok: false, message: 'Credenciales invalidas.' }
+    if (!supabase) {
+      return { ok: false, message: 'El panel estará disponible cuando Supabase esté configurado.' }
     }
 
-    setSession({
-      email: state.adminUser.email,
-      name: state.adminUser.name,
-      loggedAt: new Date().toISOString(),
-    })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error || !data.session) return { ok: false, message: 'Email o contraseña incorrectos.' }
+    const { data: admins, error: adminError } = await supabase.from('admins').select('user_id').limit(1)
+    if (adminError || !admins?.length) {
+      await supabase.auth.signOut()
+      return { ok: false, message: 'Esta cuenta no tiene acceso al panel.' }
+    }
 
     return { ok: true }
-  }, [state.adminUser.email, state.adminUser.name, state.adminUser.password])
+  }, [])
 
-  const logout = useCallback(() => setSession(null), [])
+  const logout = useCallback(async () => {
+    if (supabase) await supabase.auth.signOut()
+  }, [])
 
   const submitRsvp = useCallback(async (token, payload) => {
+    if (!supabase) return { ok: false, message: 'Supabase no esta configurado.' }
+
+    try {
+      const result = await invokeWeddingFunction('guest-invitation', {
+        action: 'submit-rsvp',
+        token,
+        payload,
+      })
+      if (!result?.ok) return { ok: false, message: result?.error ?? 'No se pudo guardar la respuesta.' }
+      await refreshRemoteState()
+      return { ok: true }
+    } catch {
+      return { ok: false, message: 'No se pudo guardar la respuesta. Intenta nuevamente.' }
+    }
+
+    /* c8 ignore next -- legacy prototype code retained temporarily below */
     const invitation = getInvitationByToken(token)
 
     if (!invitation) {
@@ -740,7 +839,7 @@ export function WeddingProvider({ children }) {
     })
 
     return { ok: true }
-  }, [getInvitationByToken, state.weddingEvent.rsvpDeadline])
+  }, [getInvitationByToken, refreshRemoteState, state.weddingEvent.rsvpDeadline])
 
   const submitGiftContribution = useCallback(async (payload) => {
     const now = new Date().toISOString()
@@ -793,6 +892,19 @@ export function WeddingProvider({ children }) {
   }, [])
 
   const submitSongSuggestion = useCallback(async (payload) => {
+    if (!supabase || !state.weddingEvent.id) return { ok: false, message: 'Supabase no esta configurado.' }
+    try {
+      const result = await invokeWeddingFunction('public-submit', {
+        action: 'song', eventId: state.weddingEvent.id, payload,
+      })
+      if (!result?.ok) return { ok: false, message: result?.error ?? 'No se pudo enviar la cancion.' }
+      await refreshRemoteState()
+      return { ok: true }
+    } catch {
+      return { ok: false, message: 'No se pudo enviar la cancion.' }
+    }
+
+    /* c8 ignore next */
     const now = new Date().toISOString()
 
     setState((current) => ({
@@ -810,7 +922,7 @@ export function WeddingProvider({ children }) {
     }))
 
     return { ok: true }
-  }, [])
+  }, [refreshRemoteState, state.weddingEvent.id])
 
   const voteSong = useCallback((songId) => {
     setState((current) => ({
@@ -821,16 +933,37 @@ export function WeddingProvider({ children }) {
     }))
   }, [])
 
-  const reviewSong = useCallback((songId, status) => {
+  const reviewSong = useCallback(async (songId, status) => {
+    if (!supabase) return
+    await supabase.from('song_suggestions').update({ status }).eq('id', songId)
+    await refreshRemoteState()
+    return
+
+    /* c8 ignore next */
     setState((current) => ({
       ...current,
       songSuggestions: current.songSuggestions.map((song) =>
         song.id === songId ? { ...song, status } : song,
       ),
     }))
-  }, [])
+  }, [refreshRemoteState])
 
   const submitMessage = useCallback(async (payload) => {
+    if (!supabase || !state.weddingEvent.id) return { ok: false, message: 'Supabase no esta configurado.' }
+    try {
+      const result = await invokeWeddingFunction('public-submit', {
+        action: 'message',
+        eventId: state.weddingEvent.id,
+        payload: { ...payload, photoPath: payload.photo?.path ?? null },
+      })
+      if (!result?.ok) return { ok: false, message: result?.error ?? 'No se pudo enviar el mensaje.' }
+      await refreshRemoteState()
+      return { ok: true }
+    } catch {
+      return { ok: false, message: 'No se pudo enviar el mensaje.' }
+    }
+
+    /* c8 ignore next */
     const now = new Date().toISOString()
 
     setState((current) => ({
@@ -847,26 +980,35 @@ export function WeddingProvider({ children }) {
     }))
 
     return { ok: true }
-  }, [])
+  }, [refreshRemoteState, state.weddingEvent.id])
 
-  const reviewMessage = useCallback((messageId, status) => {
+  const reviewMessage = useCallback(async (messageId, status) => {
+    if (!supabase) return
+    await supabase.from('guest_messages').update({ status }).eq('id', messageId)
+    await refreshRemoteState()
+    return
+
+    /* c8 ignore next */
     setState((current) => ({
       ...current,
       guestMessages: current.guestMessages.map((message) =>
         message.id === messageId ? { ...message, status } : message,
       ),
     }))
-  }, [])
+  }, [refreshRemoteState])
 
-  const addGuest = useCallback((payload) => {
+  const addGuest = useCallback(async (payload) => {
     const validation = validateInvitationPayload(payload, invitations)
 
     if (!validation.ok) {
       return validation
     }
 
-    const now = new Date().toISOString()
-    const invitationId = `invitation-${createToken()}`
+    if (!supabase || !state.weddingEvent.id) {
+      return { ok: false, message: 'Supabase no esta configurado.' }
+    }
+
+    const token = createToken()
     const members = validation.members
       .filter((member) => member.firstName)
       .map((member, index) => ({
@@ -878,48 +1020,34 @@ export function WeddingProvider({ children }) {
         isPrimary: index === validation.primaryIndex,
       }))
     const primaryMember = derivePrimaryMember(members)
-    const invitation = {
-      id: invitationId,
-      displayLabel: validation.cleanedLabel,
-      category: payload.category,
-      token: createToken(),
-      allowedSeats: validation.allowedSeats,
-      invitationMode: validation.invitationMode,
-      notes: payload.notes,
-      primaryContactFirstName: primaryMember?.firstName ?? '',
-      primaryContactLastName: primaryMember?.lastName ?? '',
-      primaryContactEmail: primaryMember?.email ?? '',
-      primaryContactPhone: primaryMember?.phone ?? '',
-      accessStatus: 'active',
-      deliveryStatus: 'pendiente',
-      createdAt: now,
-      members,
-    }
+    const { data: inserted, error } = await supabase.from('invitations').insert({
+      event_id: state.weddingEvent.id,
+      display_label: validation.cleanedLabel,
+      category: payload.category ?? 'otros',
+      invitation_mode: validation.invitationMode,
+      token_hash: await hashToken(token),
+      allowed_seats: validation.allowedSeats,
+      notes: payload.notes ?? '',
+      primary_contact_first_name: primaryMember?.firstName ?? '',
+      primary_contact_last_name: primaryMember?.lastName ?? '',
+      primary_contact_email: primaryMember?.email ?? '',
+      primary_contact_phone: primaryMember?.phone ?? '',
+    }).select().single()
+    if (error || !inserted) return { ok: false, message: error?.message ?? 'No se pudo crear la invitacion.' }
 
-    setState((current) => ({
-      ...current,
-      invitations: [
-        invitation,
-        ...current.invitations,
-      ],
-      guests: [
-        ...flattenGuestsFromInvitations([invitation]),
-        ...current.guests,
-      ],
-      auditLog: [
-        {
-          id: `audit-${createToken()}`,
-          action: 'invitation_created',
-          entityId: invitationId,
-          detail: `${validation.cleanedLabel} fue agregada manualmente.`,
-          createdAt: now,
-        },
-        ...current.auditLog,
-      ],
-    }))
-
+    const { error: membersError } = await supabase.from('invitation_members').insert(members.map((member) => ({
+      invitation_id: inserted.id,
+      first_name: member.firstName,
+      last_name: member.lastName,
+      email: member.email,
+      phone: member.phone,
+      is_primary: member.isPrimary,
+    })))
+    if (membersError) return { ok: false, message: 'La invitacion fue creada, pero no se pudieron guardar sus integrantes.' }
+    const invitation = { ...mapInvitation({ ...inserted, invitation_members: members.map((member) => ({ ...member, first_name: member.firstName, last_name: member.lastName, is_primary: member.isPrimary })) }), token }
+    await refreshRemoteState()
     return { ok: true, invitation }
-  }, [invitations])
+  }, [invitations, refreshRemoteState, state.weddingEvent.id])
 
   const importGuests = useCallback(async (file) => {
     const buffer = await file.arrayBuffer()
@@ -938,20 +1066,32 @@ export function WeddingProvider({ children }) {
 
     const imported = normalizeInvitationRows(rows)
 
-    startTransition(() => {
-      setState((current) => ({
-        ...current,
-        invitations: [...imported.map((item) => item.invitation), ...current.invitations],
-        guests: [...imported.flatMap((item) => item.guestRecords), ...current.guests],
-      }))
-    })
+    let completed = 0
+    for (const item of imported) {
+      const invitation = item.invitation
+      const primary = derivePrimaryMember(invitation.members)
+      const result = await addGuest({
+        displayLabel: invitation.displayLabel,
+        category: invitation.category,
+        invitationMode: invitation.invitationMode ?? 'group',
+        allowedSeats: invitation.allowedSeats,
+        notes: invitation.notes,
+        members: invitation.members,
+        primaryMemberIndex: invitation.members.findIndex((member) => member.isPrimary),
+        individualFirstName: primary?.firstName,
+        individualLastName: primary?.lastName,
+        individualEmail: primary?.email,
+        individualPhone: primary?.phone,
+      })
+      if (result.ok) completed += 1
+    }
 
     return {
       ok: true,
-      importedInvitations: imported.length,
-      importedGuests: imported.reduce((sum, item) => sum + item.guestRecords.length, 0),
+      importedInvitations: completed,
+      importedGuests: imported.slice(0, completed).reduce((sum, item) => sum + item.guestRecords.length, 0),
     }
-  }, [])
+  }, [addGuest])
 
   const exportGuests = useCallback(async () => {
     const Papa = await loadPapa()
@@ -988,7 +1128,23 @@ export function WeddingProvider({ children }) {
     URL.revokeObjectURL(url)
   }, [getResponseByInvitation, invitations])
 
-  const recordDelivery = useCallback((invitationId, payload) => {
+  const recordDelivery = useCallback(async (invitationId, payload) => {
+    if (!supabase) return null
+    const { data, error } = await supabase.from('invite_deliveries').insert({
+      invitation_id: invitationId,
+      channel: payload.channel,
+      type: payload.type,
+      status: payload.status ?? 'prepared',
+      recipient: payload.recipient ?? '',
+      message: payload.message ?? '',
+      invite_link: payload.inviteLink ?? '',
+      operator_id: session?.user?.id ?? null,
+    }).select().single()
+    if (error) return null
+    await refreshRemoteState()
+    return data
+
+    /* c8 ignore next */
     const now = new Date().toISOString()
     const record = {
       id: `delivery-${createToken()}`,
@@ -999,7 +1155,7 @@ export function WeddingProvider({ children }) {
       message: payload.message ?? '',
       recipient: payload.recipient ?? '',
       inviteLink: payload.inviteLink ?? '',
-      operator: session?.email ?? 'panel local',
+      operator: session?.user?.email ?? 'panel local',
       createdAt: now,
     }
 
@@ -1011,9 +1167,19 @@ export function WeddingProvider({ children }) {
       ],
     }))
     return record
-  }, [session?.email])
+  }, [refreshRemoteState, session?.user?.email, session?.user?.id])
 
-  const confirmDelivery = useCallback((deliveryId) => {
+  const confirmDelivery = useCallback(async (deliveryId) => {
+    if (!supabase) return
+    const delivery = state.inviteDeliveries.find((item) => item.id === deliveryId)
+    if (!delivery) return
+    const deliveryStatus = delivery.channel === 'whatsapp' ? 'enviada_whatsapp' : 'enviada_email'
+    await supabase.from('invite_deliveries').update({ status: 'sent_manual', confirmed_at: new Date().toISOString() }).eq('id', deliveryId)
+    await supabase.from('invitations').update({ delivery_status: deliveryStatus }).eq('id', delivery.invitationId)
+    await refreshRemoteState()
+    return
+
+    /* c8 ignore next */
     const now = new Date().toISOString()
 
     setState((current) => {
@@ -1038,7 +1204,7 @@ export function WeddingProvider({ children }) {
         ),
         inviteDeliveries: current.inviteDeliveries.map((item) =>
           item.id === deliveryId
-            ? { ...item, status: 'sent_manual', confirmedAt: now, confirmedBy: session?.email ?? 'panel local' }
+            ? { ...item, status: 'sent_manual', confirmedAt: now, confirmedBy: session?.user?.email ?? 'panel local' }
             : item,
         ),
         auditLog: [
@@ -1053,9 +1219,15 @@ export function WeddingProvider({ children }) {
         ],
       }
     })
-  }, [session?.email])
+  }, [refreshRemoteState, session?.user?.email, state.inviteDeliveries])
 
-  const setInvitationAccess = useCallback((invitationId, accessStatus) => {
+  const setInvitationAccess = useCallback(async (invitationId, accessStatus) => {
+    if (!supabase) return
+    await supabase.from('invitations').update({ access_status: accessStatus }).eq('id', invitationId)
+    await refreshRemoteState()
+    return
+
+    /* c8 ignore next */
     const now = new Date().toISOString()
     setState((current) => ({
       ...current,
@@ -1073,15 +1245,26 @@ export function WeddingProvider({ children }) {
         ...current.auditLog,
       ],
     }))
-  }, [])
+  }, [refreshRemoteState])
 
-  const regenerateInvitationToken = useCallback((invitationId) => {
-    const now = new Date().toISOString()
+  const regenerateInvitationToken = useCallback(async (invitationId) => {
+    if (!supabase) return null
     const token = createToken()
+    const { error } = await supabase.from('invitations').update({
+      token_hash: await hashToken(token),
+      access_status: 'active',
+    }).eq('id', invitationId)
+    if (error) return null
+    await refreshRemoteState()
+    return token
+
+    /* c8 ignore next */
+    const now = new Date().toISOString()
+    const legacyToken = createToken()
     setState((current) => ({
       ...current,
       invitations: current.invitations.map((invitation) =>
-        invitation.id === invitationId ? { ...invitation, token, accessStatus: 'active' } : invitation,
+        invitation.id === invitationId ? { ...invitation, token: legacyToken, accessStatus: 'active' } : invitation,
       ),
       auditLog: [
         {
@@ -1094,7 +1277,7 @@ export function WeddingProvider({ children }) {
         ...current.auditLog,
       ],
     }))
-  }, [])
+  }, [refreshRemoteState])
 
   const uploadPublicFile = useCallback(async (file, kind) => {
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -1165,12 +1348,14 @@ export function WeddingProvider({ children }) {
       metrics,
       session,
       isAuthenticated,
+      isSupabaseConfigured,
       login,
       logout,
       buildInviteLink,
       buildRsvpLink,
       buildInviteMessage,
       getInvitationByToken,
+      fetchInvitationByToken,
       getInvitationMembers,
       getGuestsByInvitation,
       getResponseByInvitation,
@@ -1208,6 +1393,7 @@ export function WeddingProvider({ children }) {
       buildInviteLink,
       buildRsvpLink,
       getInvitationByToken,
+      fetchInvitationByToken,
       getInvitationMembers,
       getGuestsByInvitation,
       getResponseByInvitation,

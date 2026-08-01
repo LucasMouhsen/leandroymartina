@@ -5,13 +5,13 @@ import SecondaryFooterNav from '../../components/SecondaryFooterNav.jsx'
 import { useWedding } from '../../context/useWedding.jsx'
 
 export default function AdminLoginPage() {
-  const { adminUser, login } = useWedding()
+  const { login } = useWedding()
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const form = useForm({
     defaultValues: {
-      email: adminUser.email,
-      password: adminUser.password,
+      email: '',
+      password: '',
     },
   })
 
@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
             <p className="feature-kicker">Panel privado</p>
             <h1>Gestion de invitados y contenidos</h1>
             <p className="feature-lead">
-              En esta demo el acceso esta preconfigurado para que puedas probar el panel completo.
+              Ingresá con la cuenta autorizada para gestionar la boda.
             </p>
           </div>
 
@@ -68,11 +68,6 @@ export default function AdminLoginPage() {
             {error ? <p className="form-feedback">{error}</p> : null}
           </form>
 
-          <div className="credential-note">
-            <span>Acceso demo</span>
-            <strong>{adminUser.email}</strong>
-            <strong>{adminUser.password}</strong>
-          </div>
         </section>
       </main>
 

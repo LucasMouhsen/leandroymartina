@@ -912,6 +912,14 @@
   text-transform: uppercase;
 }
 
+.rsvp-generic-note {
+  max-width: 17rem;
+  margin: 1.4rem 0 0;
+  color: var(--olive-deep);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
 .rsvp-copy .map-button {
   margin-top: 2rem;
 }

@@ -1,7 +1,16 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useSearchParams } from 'react-router-dom'
 import SecondaryFooterNav from '../components/SecondaryFooterNav.jsx'
+import {
+  buildFeaturePath,
+  buildInvitationPath,
+  INVITATION_QUERY_PARAM,
+} from '../lib/invitationNavigation.js'
 
 export default function FeatureLayout() {
+  const [searchParams] = useSearchParams()
+  const tokenFromUrl = searchParams.get(INVITATION_QUERY_PARAM)
+  const invitationToken = tokenFromUrl
+
   return (
     <div className="feature-shell">
       <header className="feature-header">
@@ -10,9 +19,9 @@ export default function FeatureLayout() {
         </div>
 
         <nav className="feature-nav" aria-label="Navegacion principal">
-          <NavLink to="/">Invitacion</NavLink>
-          <NavLink to="/regalos">Regalos</NavLink>
-          <NavLink to="/mensajes">Mensajes</NavLink>
+          <NavLink to={buildInvitationPath(invitationToken)}>Invitacion</NavLink>
+          <NavLink to={buildFeaturePath('/regalos', invitationToken)}>Regalos</NavLink>
+          <NavLink to={buildFeaturePath('/mensajes', invitationToken)}>Mensajes</NavLink>
           <NavLink to="/admin/login">Panel</NavLink>
         </nav>
       </header>
@@ -21,9 +30,9 @@ export default function FeatureLayout() {
 
       <SecondaryFooterNav
         links={[
-          { to: '/', text: 'Invitacion' },
-          { to: '/regalos', text: 'Regalos' },
-          { to: '/mensajes', text: 'Mensajes' },
+          { to: buildInvitationPath(invitationToken), text: 'Invitacion' },
+          { to: buildFeaturePath('/regalos', invitationToken), text: 'Regalos' },
+          { to: buildFeaturePath('/mensajes', invitationToken), text: 'Mensajes' },
           { to: '/admin/login', text: 'Panel' },
         ]}
       />

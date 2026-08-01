@@ -44,16 +44,28 @@ function formatDeadline(deadline) {
 export default function GuestRsvpPage() {
   const { token } = useParams()
   const {
-    getInvitationByToken,
-    getResponseByInvitation,
+    fetchInvitationByToken,
     getRsvpAttendees,
     submitRsvp,
     weddingEvent,
   } = useWedding()
   const [status, setStatus] = useState(null)
+  const [remoteInvitation, setRemoteInvitation] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const invitation = getInvitationByToken(token)
-  const existingResponse = invitation ? getResponseByInvitation(invitation.id) : null
+  useEffect(() => {
+    let active = true
+    fetchInvitationByToken(token).then((result) => {
+      if (active) {
+        setRemoteInvitation(result)
+        setIsLoading(false)
+      }
+    })
+    return () => { active = false }
+  }, [fetchInvitationByToken, token])
+
+  const invitation = remoteInvitation?.invitation ?? null
+  const existingResponse = remoteInvitation?.response ?? null
   const attendeeRows = useMemo(
     () => (invitation ? getRsvpAttendees(invitation, existingResponse) : []),
     [existingResponse, getRsvpAttendees, invitation],
@@ -67,7 +79,7 @@ export default function GuestRsvpPage() {
       comments: existingResponse?.comments ?? '',
     },
   })
-  const isDeadlineClosed = hasRsvpDeadlinePassed(weddingEvent.rsvpDeadline)
+  const isDeadlineClosed = hasRsvpDeadlinePassed(remoteInvitation?.rsvpDeadline ?? weddingEvent.rsvpDeadline)
 
   useEffect(() => {
     form.reset({
@@ -82,6 +94,10 @@ export default function GuestRsvpPage() {
   const confirmedCount = attending === 'si'
     ? watchedAttendees.filter((attendee) => attendee.attending).length
     : 0
+
+  if (isLoading) {
+    return <section className="feature-page feature-empty"><p>Cargando invitacion…</p></section>
+  }
 
   if (!invitation) {
     return (
