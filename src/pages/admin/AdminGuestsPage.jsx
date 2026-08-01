@@ -558,7 +558,7 @@ export default function AdminGuestsPage() {
                   <td>
                     <strong>{invitation.displayLabel}</strong>
                     <br />
-                    <code>{invitation.token}</code>
+                    <code>{invitation.token ?? 'Token protegido'}</code>
                   </td>
                   <td>{invitationModeLabel(invitation.invitationMode)}</td>
                   <td>{primaryMember ? `${primaryMember.firstName} ${primaryMember.lastName}`.trim() : '-'}</td>
@@ -584,7 +584,7 @@ export default function AdminGuestsPage() {
               <article className="admin-mobile-card" key={invitation.id}>
                 <div className="admin-mobile-card__header">
                   <p className="admin-mobile-card__title">{invitation.displayLabel}</p>
-                  <code>{invitation.token}</code>
+                  <code>{invitation.token ?? 'Token protegido'}</code>
                 </div>
 
                 <div className="admin-mobile-card__row">

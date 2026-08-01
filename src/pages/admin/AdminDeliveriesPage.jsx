@@ -148,17 +148,25 @@ export default function AdminDeliveriesPage() {
     return pending
   }, [history])
 
-  const recordPreparation = (invitation, payload) => recordDelivery(invitation.id, {
+  const ensureInvitationToken = async (invitation) => {
+    if (invitation.token) return invitation.token
+
+    const token = await regenerateInvitationToken(invitation.id)
+    if (!token) throw new Error('token_generation_failed')
+    return token
+  }
+
+  const recordPreparation = (invitation, inviteLink, payload) => recordDelivery(invitation.id, {
     ...payload,
-    inviteLink: buildInviteLink(invitation.token),
+    inviteLink,
   })
 
   const copyLink = async (invitation, kind = 'invitation') => {
-    const link = kind === 'rsvp' ? buildRsvpLink(invitation.token) : buildInviteLink(invitation.token)
-
     try {
+      const token = await ensureInvitationToken(invitation)
+      const link = kind === 'rsvp' ? buildRsvpLink(token) : buildInviteLink(token)
       await copyText(link)
-      recordPreparation(invitation, {
+      await recordPreparation(invitation, link, {
         channel: 'link',
         type: 'link_copied',
         status: 'prepared',
@@ -172,11 +180,12 @@ export default function AdminDeliveriesPage() {
   }
 
   const copyEmailMessage = async (invitation) => {
-    const message = buildInviteMessage(contactName(invitation), buildInviteLink(invitation.token))
-
     try {
+      const token = await ensureInvitationToken(invitation)
+      const inviteLink = buildInviteLink(token)
+      const message = buildInviteMessage(contactName(invitation), inviteLink)
       await copyText(message)
-      recordPreparation(invitation, {
+      await recordPreparation(invitation, inviteLink, {
         channel: 'email',
         type: 'email_copied',
         status: 'prepared',
@@ -189,7 +198,7 @@ export default function AdminDeliveriesPage() {
     }
   }
 
-  const openWhatsApp = (invitation) => {
+  const openWhatsApp = async (invitation) => {
     const phone = normalizeWhatsAppPhone(invitation.primaryContactPhone)
 
     if (!phone) {
@@ -197,10 +206,19 @@ export default function AdminDeliveriesPage() {
       return
     }
 
-    const message = buildInviteMessage(contactName(invitation), buildInviteLink(invitation.token)).normalize('NFC')
+    let token
+    try {
+      token = await ensureInvitationToken(invitation)
+    } catch {
+      setFeedback('No se pudo generar un enlace valido. Intenta nuevamente.')
+      return
+    }
+
+    const inviteLink = buildInviteLink(token)
+    const message = buildInviteMessage(contactName(invitation), inviteLink).normalize('NFC')
     const params = new URLSearchParams({ phone, text: message, type: 'phone_number', app_absent: '0' })
     window.open(`https://api.whatsapp.com/send/?${params.toString()}`, '_blank', 'noopener,noreferrer')
-    recordPreparation(invitation, {
+    await recordPreparation(invitation, inviteLink, {
       channel: 'whatsapp',
       type: 'whatsapp_composer_opened',
       status: 'prepared',
@@ -227,13 +245,17 @@ export default function AdminDeliveriesPage() {
     setFeedback(`Enlace ${nextStatus === 'paused' ? 'pausado' : 'reactivado'} para ${invitation.displayLabel}.`)
   }
 
-  const regenerateLink = (invitation) => {
+  const regenerateLink = async (invitation) => {
     if (!window.confirm(`Vas a invalidar el enlace actual de ${invitation.displayLabel} y crear uno nuevo.`)) {
       return
     }
 
-    regenerateInvitationToken(invitation.id)
-    setFeedback(`Enlace regenerado para ${invitation.displayLabel}. Copia el nuevo link antes de reenviarlo.`)
+    const token = await regenerateInvitationToken(invitation.id)
+    setFeedback(
+      token
+        ? `Enlace regenerado para ${invitation.displayLabel}. Ya podes copiarlo o enviarlo.`
+        : 'No se pudo regenerar el enlace. Intenta nuevamente.',
+    )
   }
 
   const renderActions = (invitation) => (
