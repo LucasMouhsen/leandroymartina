@@ -3,7 +3,7 @@ export const weddingEvent = {
   date: '10 de octubre 2026',
   location: 'San Jorge, Santa Fe',
   countdownTarget: '2026-10-10T15:00:00-03:00',
-  rsvpDeadline: '2026-09-10',
+  rsvpDeadline: '2026-08-20',
   allowSongVoting: true,
   giftInstructions: [
     'Alias: LEANYMARTU',
