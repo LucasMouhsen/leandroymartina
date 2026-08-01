@@ -210,6 +210,7 @@ export default function GiftsPage() {
   const paymentDetails = useMemo(() => ({
     alias: parsePaymentDetail(weddingEvent.giftInstructions, 'Alias'),
     cbuArs: parsePaymentDetail(weddingEvent.giftInstructions, 'CBU en pesos'),
+    aliasUsd: parsePaymentDetail(weddingEvent.giftInstructions, 'Alias en USD'),
     cbuUsd: parsePaymentDetail(weddingEvent.giftInstructions, 'CBU en USD'),
   }), [weddingEvent.giftInstructions])
 
@@ -598,6 +599,13 @@ export default function GiftsPage() {
                     <span>CBU pesos</span>
                     <strong>{paymentDetails.cbuArs}</strong>
                     <button type="button" onClick={() => handleCopyPaymentDetail('CBU en pesos', paymentDetails.cbuArs)}>
+                      Copiar
+                    </button>
+                  </div>
+                  <div className="gift-payment-detail">
+                    <span>Alias dólares</span>
+                    <strong>{paymentDetails.aliasUsd}</strong>
+                    <button type="button" onClick={() => handleCopyPaymentDetail('Alias en USD', paymentDetails.aliasUsd)}>
                       Copiar
                     </button>
                   </div>

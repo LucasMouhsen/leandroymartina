@@ -7,7 +7,8 @@ export const weddingEvent = {
   allowSongVoting: true,
   giftInstructions: [
     'Alias: LEANYMARTU',
-    'CBU en pesos: 0070250030004046537271',
-    'CBU en USD: 0070999031004168307140',
+    'CBU en pesos: 0140029803505556401640',
+    'Alias en USD: LEANYMARTU.USD',
+    'CBU en USD: 0140029804505551569803',
   ],
 }

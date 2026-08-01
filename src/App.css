@@ -669,7 +669,7 @@
   top: 3rem;
   right: 3.25rem;
   width: min(18vw, 5.75rem);
-  z-index: 1;
+  z-index: 0;
 }
 
 .reception-flower img {
@@ -697,11 +697,10 @@
 }
 
 .reception-image {
-  position: relative;
   display: block;
   width: min(100%, 18.9rem);
   margin: 2.25rem auto 0;
-  z-index: 2;
+  z-index: 9;
 }
 
 .reception-place {
@@ -2504,7 +2503,7 @@
   .gifts-spray {
     width: 14.5rem;
     height: 16.5rem;
-    margin: 1.35rem auto 1.15rem;
+    margin: 0 auto 0;
     overflow: visible;
   }
 

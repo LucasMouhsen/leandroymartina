@@ -56,43 +56,11 @@ export const decasorioGiftItems = [
     "category": "deco"
   },
   {
-    "id": "gift-409",
-    "name": "Bandeja decorativa",
-    "suggestedAmount": 40000,
-    "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/bandeja_selene_1.jpg?itok=57HdsD0F",
-    "description": "Para organizar y sumar un detalle especial a la casa.",
-    "category": "deco"
-  },
-  {
-    "id": "gift-115",
-    "name": "Bowl con pico",
-    "suggestedAmount": 30000,
-    "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/39083329_663061690745734_4740570999068557312_o.jpg?itok=Jo4RWG7v",
-    "description": "Un bowl práctico para servir y preparar comidas.",
-    "category": "deco"
-  },
-  {
     "id": "gift-2707",
     "name": "Set de bowls de cerámica",
     "suggestedAmount": 70000,
     "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/26926702d16e9f7aed30d65b07f4e61e.jpg?itok=ISOiB6T0",
     "description": "Un set para compartir en la mesa todos los días.",
-    "category": "deco"
-  },
-  {
-    "id": "gift-202",
-    "name": "Bowl de cerámica",
-    "suggestedAmount": 40000,
-    "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/bowl_estambul.jpg?itok=HRLNVwqC",
-    "description": "Una pieza simple y versátil para la cocina.",
-    "category": "deco"
-  },
-  {
-    "id": "gift-415",
-    "name": "Bowl de cerámica grande",
-    "suggestedAmount": 50000,
-    "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/bowl_teka_1.jpeg?itok=1X_d4vxS",
-    "description": "Ideal para servir ensaladas, frutas o preparaciones para compartir.",
     "category": "deco"
   },
   {
@@ -248,14 +216,6 @@ export const decasorioGiftItems = [
     "category": "muebles"
   },
   {
-    "id": "gift-131",
-    "name": "Taza de cerámica",
-    "suggestedAmount": 20000,
-    "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/36988896_292184751326975_7291257664191856640_n.jpg?itok=fY0X6rtY",
-    "description": "Para disfrutar desayunos, meriendas y pausas de café.",
-    "category": "deco"
-  },
-  {
     "id": "gift-2520",
     "name": "Procesadora multifunción",
     "suggestedAmount": 2300000,
@@ -286,21 +246,5 @@ export const decasorioGiftItems = [
     "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/valija_de_70x50_180.000.jpg?itok=ESDXO1hV",
     "description": "Para acompañarnos en futuras escapadas y viajes.",
     "category": "viaje"
-  },
-  {
-    "id": "gift-136",
-    "name": "Vaso alto",
-    "suggestedAmount": 20000,
-    "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/64660172_2395608997364818_6937979395683846373_n.jpg?itok=XZVsL-8v",
-    "description": "Un básico para completar la mesa diaria.",
-    "category": "deco"
-  },
-  {
-    "id": "gift-413",
-    "name": "Vela decorativa",
-    "suggestedAmount": 20000,
-    "image": "https://www.decasorio.com.ar/sites/default/files/styles/muestra2/public/vela_piramide_medium_1.jpg?itok=UWxHEHCd",
-    "description": "Un detalle cálido para crear momentos especiales.",
-    "category": "deco"
   }
 ]

@@ -441,15 +441,17 @@ export default function InvitationPage() {
 
               <div className="gift-details">
                 {[
+                  weddingEvent.giftInstructions[0],
                   weddingEvent.giftInstructions[1],
                   weddingEvent.giftInstructions[2],
-                  weddingEvent.giftInstructions[0],
+                  weddingEvent.giftInstructions[3],
                 ].filter(Boolean).map((detail) => (
                   <p key={detail}>
                     {detail
                       .replace('CBU en pesos:', 'CBU PESOS:')
                       .replace('CBU en USD:', 'CBU USD:')
-                      .replace('Alias:', 'ALIAS:')}
+                      .replace('Alias:', 'ALIAS:')
+                      .replace('Alias en USD:', 'Alias en USD:')}
                   </p>
                 ))}
               </div>
