@@ -309,7 +309,7 @@ Por favor, confirma tu asistencia hasta el 20 de agosto.
 Esperamos poder celebrar este dia con vos \u2764\ufe0f`
 }
 
-function validateInvitationPayload(payload, existingInvitations = []) {
+function validateInvitationPayload(payload) {
   const invitationMode = payload.invitationMode === 'individual' ? 'individual' : 'group'
   const rawMembers = invitationMode === 'individual'
     ? [
@@ -346,20 +346,6 @@ function validateInvitationPayload(payload, existingInvitations = []) {
         invitationMode === 'individual'
           ? 'Ingresa al menos el nombre de la persona invitada.'
           : 'Ingresa un nombre para el grupo antes de guardar.',
-    }
-  }
-
-  if (
-    existingInvitations.some(
-      (invitation) => invitation.displayLabel.trim().toLowerCase() === cleanedLabel.toLowerCase(),
-    )
-  ) {
-    return {
-      ok: false,
-      message:
-        invitationMode === 'individual'
-          ? 'Ya existe una invitacion con esa etiqueta. Usa otra etiqueta para distinguirla.'
-          : 'Ya existe un grupo con ese nombre. Usa otra etiqueta para distinguirlo.',
     }
   }
 
@@ -547,7 +533,7 @@ export function WeddingProvider({ children }) {
     const requestId = ++refreshRequestRef.current
 
     const { data: event } = await supabase.from('events').select('*').limit(1).maybeSingle()
-    const [messagesResult, songsResult, invitationsResult, deliveriesResult] = await Promise.all([
+    const [messagesResult, songsResult, invitationsResult, deliveriesResult, giftPriceOverridesResult] = await Promise.all([
       supabase.from('guest_messages').select('*').order('created_at', { ascending: false }),
       supabase.from('song_suggestions').select('*').order('created_at', { ascending: false }),
       // These tables have admin-only RLS policies. Query them unconditionally
@@ -555,6 +541,7 @@ export function WeddingProvider({ children }) {
       // whether rows are returned.
       supabase.from('invitations').select('*, invitation_members(*), rsvp_responses(*, rsvp_attendees(*))').order('created_at', { ascending: false }),
       supabase.from('invite_deliveries').select('*').order('created_at', { ascending: false }),
+      supabase.from('gift_price_overrides').select('*'),
     ])
 
     const nextInvitations = (invitationsResult.data ?? []).map(mapInvitation)
@@ -562,6 +549,9 @@ export function WeddingProvider({ children }) {
       (invitation.rsvp_responses ?? []).map(mapResponse),
     )
     const guests = flattenGuestsFromInvitations(nextInvitations)
+    const priceOverrides = new Map(
+      (giftPriceOverridesResult.data ?? []).map((override) => [override.gift_item_id, Number(override.suggested_amount)]),
+    )
 
     if (requestId !== refreshRequestRef.current) return
 
@@ -592,6 +582,11 @@ export function WeddingProvider({ children }) {
         requestedBy: song.requested_by,
         createdAt: song.created_at,
       })),
+      giftItems: current.giftItems.map((gift) => (
+        priceOverrides.has(gift.id)
+          ? { ...gift, suggestedAmount: priceOverrides.get(gift.id) }
+          : gift
+      )),
       inviteDeliveries: (deliveriesResult.data ?? []).map((delivery) => ({
         ...delivery,
         invitationId: delivery.invitation_id,
@@ -919,6 +914,38 @@ export function WeddingProvider({ children }) {
     }))
   }, [])
 
+  const updateGiftPrice = useCallback(async (giftId, suggestedAmount) => {
+    const amount = Number(suggestedAmount)
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { ok: false, message: 'Ingresa un precio mayor a $0.' }
+    }
+
+    if (supabase && state.weddingEvent.id) {
+      const { error } = await supabase
+        .from('gift_price_overrides')
+        .upsert({
+          event_id: state.weddingEvent.id,
+          gift_item_id: giftId,
+          suggested_amount: amount,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'event_id,gift_item_id' })
+
+      if (error) {
+        return { ok: false, message: 'No pudimos guardar el precio. Intenta nuevamente.' }
+      }
+    }
+
+    setState((current) => ({
+      ...current,
+      giftItems: current.giftItems.map((gift) => (
+        gift.id === giftId ? { ...gift, suggestedAmount: amount } : gift
+      )),
+    }))
+
+    return { ok: true }
+  }, [state.weddingEvent.id])
+
   const submitSongSuggestion = useCallback(async (payload) => {
     if (!supabase || !state.weddingEvent.id) return { ok: false, message: 'Supabase no esta configurado.' }
     try {
@@ -1026,7 +1053,7 @@ export function WeddingProvider({ children }) {
   }, [refreshRemoteState])
 
   const addGuest = useCallback(async (payload) => {
-    const validation = validateInvitationPayload(payload, invitations)
+    const validation = validateInvitationPayload(payload)
 
     if (!validation.ok) {
       return validation
@@ -1069,9 +1096,6 @@ export function WeddingProvider({ children }) {
       const inserted = created?.invitation
       const token = created?.token
       if (error || !inserted || !token) {
-        if (error?.code === '23505') {
-          return { ok: false, message: 'Ya existe una invitacion con ese nombre. Busca la invitacion existente o utiliza un nombre diferente.' }
-        }
         return { ok: false, message: error?.message ?? 'No se pudo crear la invitacion.' }
       }
 
@@ -1090,7 +1114,7 @@ export function WeddingProvider({ children }) {
     } catch (error) {
       return { ok: false, message: error instanceof Error ? error.message : 'No se pudo crear la invitacion.' }
     }
-  }, [invitations, refreshRemoteState, state.weddingEvent.id])
+  }, [refreshRemoteState, state.weddingEvent.id])
 
   const importGuests = useCallback(async (file) => {
     const buffer = await file.arrayBuffer()
@@ -1420,6 +1444,7 @@ export function WeddingProvider({ children }) {
       submitRsvp,
       submitGiftContribution,
       setContributionStatus,
+      updateGiftPrice,
       submitSongSuggestion,
       voteSong,
       reviewSong,
@@ -1460,6 +1485,7 @@ export function WeddingProvider({ children }) {
       submitRsvp,
       submitGiftContribution,
       setContributionStatus,
+      updateGiftPrice,
       submitSongSuggestion,
       voteSong,
       reviewSong,

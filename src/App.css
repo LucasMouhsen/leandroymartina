@@ -970,7 +970,7 @@
 
 .player:hover,
 .map-button:hover {
-  transform: translateY(-2px);
+  transform: translateY(-40px);
 }
 
 .player:active,

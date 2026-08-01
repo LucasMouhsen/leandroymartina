@@ -18,7 +18,7 @@ const schema = z.object({
 const freeContributionCard = {
   id: 'free',
   name: 'Aporte libre',
-  suggestedAmount: 50000,
+  suggestedAmount: 0,
   image: asset('assets/optimized/gallery-bg.webp'),
   description: 'Si preferis sumar con el monto que quieras, podes hacerlo desde aca.',
   category: 'aporte',

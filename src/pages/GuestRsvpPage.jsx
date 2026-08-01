@@ -74,6 +74,7 @@ export default function GuestRsvpPage() {
 
   const form = useForm({
     resolver: zodResolver(schema),
+    mode: 'onChange',
     defaultValues: {
       attending: existingResponse?.status === 'rechazado' ? 'no' : 'si',
       attendees: attendeeRows,
@@ -95,6 +96,7 @@ export default function GuestRsvpPage() {
   const confirmedCount = attending === 'si'
     ? watchedAttendees.filter((attendee) => attendee.attending).length
     : 0
+  const attendeeErrors = form.formState.errors.attendees
 
   if (isLoading) {
     return <section className="feature-page feature-empty"><p>Cargando invitacion…</p></section>
@@ -118,13 +120,17 @@ export default function GuestRsvpPage() {
     )
   }
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const saveResponse = async (values) => {
     if (isDeadlineClosed) {
       setStatus({ tone: 'error', message: 'El plazo para confirmar asistencia ya finalizo.' })
       return
     }
 
     if (values.attending === 'si' && confirmedCount === 0) {
+      form.setError('attendees', {
+        type: 'required',
+        message: 'Elegí al menos una persona que vaya a asistir.',
+      })
       setStatus({ tone: 'error', message: 'Marca al menos una persona asistente o indica que no podran asistir.' })
       return
     }
@@ -149,7 +155,13 @@ export default function GuestRsvpPage() {
         ? { tone: 'success', message: 'Respuesta registrada. Los novios ya pueden verla en el panel.' }
         : { tone: 'error', message: result.message },
     )
-  })
+  }
+
+  const onInvalid = () => {
+    setStatus({ tone: 'error', message: 'Revisa los campos marcados antes de guardar la respuesta.' })
+  }
+
+  const onSubmit = form.handleSubmit(saveResponse, onInvalid)
 
   return (
     <section className="feature-page">
@@ -176,7 +188,7 @@ export default function GuestRsvpPage() {
       </div>
 
       <div className="feature-grid">
-        <form className="form-card" onSubmit={onSubmit}>
+        <form className="form-card rsvp-form-card" onSubmit={onSubmit} noValidate>
           <div className="form-card__invitation-summary">
             <span className="feature-kicker">Grupo invitado</span>
             <strong>{invitation.displayLabel}</strong>
@@ -193,16 +205,18 @@ export default function GuestRsvpPage() {
             </p>
           ) : null}
 
-          <fieldset className="segmented-field" disabled={isDeadlineClosed}>
-            <legend>Van a acompanarnos?</legend>
+          <fieldset className="segmented-field rsvp-decision" disabled={isDeadlineClosed}>
+            <legend>Van a acompanarnos?<small>Elegí una opcion para continuar.</small></legend>
             <div>
-              <label>
+              <label className={attending === 'si' ? 'is-selected' : ''}>
                 <input type="radio" value="si" {...form.register('attending')} />
-                Si, vamos a asistir
+                <span className="rsvp-decision__icon" aria-hidden="true">&#10003;</span>
+                <span><strong>Si, vamos a asistir</strong><small>Ahora elegí quienes forman parte del grupo.</small></span>
               </label>
-              <label>
+              <label className={attending === 'no' ? 'is-selected' : ''}>
                 <input type="radio" value="no" {...form.register('attending')} />
-                No podremos asistir
+                <span className="rsvp-decision__icon" aria-hidden="true">&mdash;</span>
+                <span><strong>No podremos asistir</strong><small>Guardaremos la respuesta y avisaremos a los novios.</small></span>
               </label>
             </div>
           </fieldset>
@@ -210,18 +224,28 @@ export default function GuestRsvpPage() {
           {attending === 'si' ? (
             <div className="rsvp-attendee-list">
               <div className="rsvp-attendee-list__header">
-                <h3>Quienes asisten</h3>
-                <span>
+                <div>
+                  <h3>Quienes asisten?</h3>
+                </div>
+                <span className={confirmedCount > 0 ? 'is-complete' : ''}>
                   {confirmedCount} de {invitation.allowedSeats} {invitation.allowedSeats === 1 ? 'cupo' : 'cupos'}
                 </span>
               </div>
+
+              <p className="rsvp-attendee-list__hint">
+                Toca cada nombre para sumarlo a la confirmacion. Los datos de alimentacion son opcionales.
+              </p>
+
+              {attendeeErrors?.message ? (
+                <p className="field-error" role="alert">{attendeeErrors.message}</p>
+              ) : null}
 
               {attendeeRows.map((attendee, index) => {
                 const fieldAttending = watchedAttendees[index]?.attending
                 const displayName = attendeeDisplayName(watchedAttendees[index] ?? attendee, index)
 
                 return (
-                  <article className="rsvp-attendee-card" key={attendee.id}>
+                  <article className={`rsvp-attendee-card ${fieldAttending ? 'is-selected' : ''}`} key={attendee.id}>
                     <input type="hidden" {...form.register(`attendees.${index}.id`)} />
                     <input type="hidden" {...form.register(`attendees.${index}.type`)} />
                     <input type="hidden" {...form.register(`attendees.${index}.memberId`)} />
@@ -229,7 +253,12 @@ export default function GuestRsvpPage() {
                     <input type="hidden" {...form.register(`attendees.${index}.lastName`)} />
 
                     <label className="rsvp-attendee-card__check">
-                      <input type="checkbox" {...form.register(`attendees.${index}.attending`)} />
+                      <input
+                        type="checkbox"
+                        {...form.register(`attendees.${index}.attending`, {
+                          onChange: () => form.clearErrors('attendees'),
+                        })}
+                      />
                       <span>
                         <strong>{displayName}</strong>
                         <small>{attendee.type === 'companion' ? 'Acompanante' : 'Integrante invitado'}</small>
@@ -237,16 +266,20 @@ export default function GuestRsvpPage() {
                     </label>
 
                     {attendee.type === 'companion' ? (
-                      <label>
+                      <label className={form.formState.errors.attendees?.[index]?.name ? 'has-error' : ''}>
                         Nombre del acompanante
                         <input
                           disabled={!fieldAttending}
                           autoComplete="name"
                           placeholder={`Acompanante ${index + 1}…`}
-                          {...form.register(`attendees.${index}.name`)}
+                          aria-invalid={Boolean(form.formState.errors.attendees?.[index]?.name)}
+                          aria-describedby={form.formState.errors.attendees?.[index]?.name ? `companion-error-${index}` : undefined}
+                          {...form.register(`attendees.${index}.name`, {
+                            onChange: () => form.clearErrors(`attendees.${index}.name`),
+                          })}
                         />
                         {form.formState.errors.attendees?.[index]?.name ? (
-                          <span>{form.formState.errors.attendees[index].name.message}</span>
+                          <span id={`companion-error-${index}`} role="alert">{form.formState.errors.attendees[index].name.message}</span>
                         ) : null}
                       </label>
                     ) : (
@@ -269,19 +302,33 @@ export default function GuestRsvpPage() {
             </div>
           ) : null}
 
-          <label>
+          <label className={form.formState.errors.comments ? 'has-error' : ''}>
             Comentarios adicionales
             <textarea
               rows="4"
               autoComplete="off"
               placeholder="Podes dejar un mensaje para los novios o aclaraciones."
+              aria-invalid={Boolean(form.formState.errors.comments)}
+              aria-describedby="comments-help"
               {...form.register('comments')}
             />
+            <small id="comments-help">Opcional. Maximo 300 caracteres.</small>
+            {form.formState.errors.comments ? <span role="alert">{form.formState.errors.comments.message}</span> : null}
           </label>
 
-          <button className="primary-button" type="submit" disabled={isDeadlineClosed}>
-            Guardar respuesta
-          </button>
+          <div className="rsvp-submit-area">
+            <button className="primary-button rsvp-submit-button" type="submit" disabled={isDeadlineClosed}>
+              <span>{attending === 'no' ? 'Confirmar que no asistiremos' : 'Confirmar asistencia'}</span>
+              <span aria-hidden="true">&#8594;</span>
+            </button>
+            <p role="status" aria-live="polite">
+              {attending === 'no'
+                ? 'Vas a guardar que no podran asistir.'
+                : confirmedCount > 0
+                  ? `${confirmedCount} ${confirmedCount === 1 ? 'persona confirmada' : 'personas confirmadas'}. Ya podes guardar.`
+                  : 'Primero marca al menos una persona que vaya a asistir.'}
+            </p>
+          </div>
 
           <p className="form-card__footnote">
             Si necesitas cambiar algo mas adelante, podes volver a entrar con este mismo link
