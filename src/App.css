@@ -2536,3 +2536,42 @@
     transform: translateX(-50%) rotate(-40deg);
   }
 }
+
+/* Desktop-only bouquet correction. Mobile rules above remain untouched. */
+@media (min-width: 48rem) {
+  .gifts-spray {
+    width: clamp(16rem, 28svh, 19rem);
+    height: clamp(18rem, 40svh, 22rem);
+    margin: clamp(0.8rem, 2svh, 1.35rem) auto clamp(0.65rem, 1.5svh, 1rem);
+    overflow: visible;
+  }
+
+  .gift-stem {
+    height: auto;
+    object-fit: initial;
+  }
+
+  .gift-stem--eucalyptus {
+    z-index: 2;
+    top: 1.35rem;
+    left: 47%;
+    width: clamp(5.8rem, 11svh, 7.4rem);
+    transform: translateX(-50%) rotate(-24deg);
+  }
+
+  .gift-stem--wheat {
+    z-index: 1;
+    top: 0;
+    left: 51%;
+    width: clamp(3.35rem, 6.2svh, 4.2rem);
+    transform: translateX(-50%) rotate(-7deg);
+  }
+
+  .gift-stem--mimosa {
+    z-index: 3;
+    top: 2.4rem;
+    left: 55%;
+    width: clamp(5.4rem, 10svh, 6.8rem);
+    transform: translateX(-50%) rotate(19deg);
+  }
+}
