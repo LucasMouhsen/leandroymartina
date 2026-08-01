@@ -795,6 +795,14 @@
   letter-spacing: 0.02em;
 }
 
+.gift-page-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  margin-top: 1.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
 .dress-section {
   min-height: 46rem;
 }
@@ -2469,5 +2477,33 @@
   .hero-date {
     margin-top: 0.5rem;
     font-size: 0.66rem;
+  }
+}
+
+/* Final mobile overrides: these come after the reference-composition rules. */
+@media (max-width: 47.99rem) {
+  .intro-audio-control {
+    position: static;
+    left: auto;
+    top: auto;
+    margin-top: 0.5rem;
+    transform: none;
+  }
+
+  .invitation-page > .gifts-section {
+    min-height: 0;
+    height: auto;
+    padding-bottom: 3rem;
+  }
+
+  .gift-details {
+    transform: none;
+  }
+
+  .gift-page-link {
+    min-width: 9.5rem;
+    min-height: 2.75rem;
+    margin-top: 1.1rem;
+    padding: 0.55rem 1.25rem;
   }
 }

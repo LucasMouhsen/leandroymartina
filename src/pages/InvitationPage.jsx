@@ -458,6 +458,13 @@ export default function InvitationPage() {
                   </p>
                 ))}
               </div>
+
+              <Link
+                className="gift-page-link map-button map-button--olive"
+                to={buildFeaturePath('/regalos', invitation?.token)}
+              >
+                Ver regalos
+              </Link>
             </div>
           </div>
         </section>
