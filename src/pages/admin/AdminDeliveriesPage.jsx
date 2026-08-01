@@ -148,12 +148,11 @@ export default function AdminDeliveriesPage() {
     return pending
   }, [history])
 
-  const ensureInvitationToken = async (invitation) => {
+  const requireInvitationToken = (invitation) => {
     if (invitation.token) return invitation.token
 
-    const token = await regenerateInvitationToken(invitation.id)
-    if (!token) throw new Error('token_generation_failed')
-    return token
+    setFeedback(`Primero regenerá el enlace de ${invitation.displayLabel}. Después vas a poder copiarlo o enviarlo.`)
+    return null
   }
 
   const recordPreparation = (invitation, inviteLink, payload) => recordDelivery(invitation.id, {
@@ -162,8 +161,10 @@ export default function AdminDeliveriesPage() {
   })
 
   const copyLink = async (invitation, kind = 'invitation') => {
+    const token = requireInvitationToken(invitation)
+    if (!token) return
+
     try {
-      const token = await ensureInvitationToken(invitation)
       const link = kind === 'rsvp' ? buildRsvpLink(token) : buildInviteLink(token)
       await copyText(link)
       await recordPreparation(invitation, link, {
@@ -180,8 +181,10 @@ export default function AdminDeliveriesPage() {
   }
 
   const copyEmailMessage = async (invitation) => {
+    const token = requireInvitationToken(invitation)
+    if (!token) return
+
     try {
-      const token = await ensureInvitationToken(invitation)
       const inviteLink = buildInviteLink(token)
       const message = buildInviteMessage(contactName(invitation), inviteLink)
       await copyText(message)
@@ -206,13 +209,8 @@ export default function AdminDeliveriesPage() {
       return
     }
 
-    let token
-    try {
-      token = await ensureInvitationToken(invitation)
-    } catch {
-      setFeedback('No se pudo generar un enlace valido. Intenta nuevamente.')
-      return
-    }
+    const token = requireInvitationToken(invitation)
+    if (!token) return
 
     const inviteLink = buildInviteLink(token)
     const message = buildInviteMessage(contactName(invitation), inviteLink).normalize('NFC')
