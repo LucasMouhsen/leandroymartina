@@ -550,7 +550,11 @@ export function WeddingProvider({ children }) {
     if (!supabase) return
 
     const { data: event } = await supabase.from('events').select('*').limit(1).maybeSingle()
-    const isAdmin = Boolean(session?.user)
+    // Auth state changes asynchronously after sign-in. Resolve the persisted
+    // session too, so an immediately-created invitation is not hidden from
+    // the panel during that first refresh.
+    const { data: authData } = session?.user ? { data: { session } } : await supabase.auth.getSession()
+    const isAdmin = Boolean(authData.session?.user)
     const [messagesResult, songsResult, invitationsResult, deliveriesResult] = await Promise.all([
       supabase.from('guest_messages').select('*').order('created_at', { ascending: false }),
       supabase.from('song_suggestions').select('*').order('created_at', { ascending: false }),
@@ -606,7 +610,7 @@ export function WeddingProvider({ children }) {
         createdAt: delivery.created_at,
       })),
     }))
-  }, [session?.user])
+  }, [session])
 
   useEffect(() => {
     if (!supabase) return undefined
@@ -708,6 +712,7 @@ export function WeddingProvider({ children }) {
       return { ok: false, message: 'Esta cuenta no tiene acceso al panel.' }
     }
 
+    setSession(data.session)
     return { ok: true }
   }, [])
 
@@ -1043,7 +1048,12 @@ export function WeddingProvider({ children }) {
       }).single()
       const inserted = created?.invitation
       const token = created?.token
-      if (error || !inserted || !token) return { ok: false, message: error?.message ?? 'No se pudo crear la invitacion.' }
+      if (error || !inserted || !token) {
+        if (error?.code === '23505') {
+          return { ok: false, message: 'Ya existe una invitacion con ese nombre. Busca la invitacion existente o utiliza un nombre diferente.' }
+        }
+        return { ok: false, message: error?.message ?? 'No se pudo crear la invitacion.' }
+      }
 
       const { error: membersError } = await supabase.from('invitation_members').insert(members.map((member) => ({
         invitation_id: inserted.id,
