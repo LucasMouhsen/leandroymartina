@@ -32,12 +32,17 @@ function RouteFallback() {
 }
 
 function AdminEntryRedirect() {
-  const { isAuthenticated } = useWedding()
+  const { isAuthenticated, isSessionLoading } = useWedding()
+  if (isSessionLoading) return <RouteFallback />
   return <Navigate to={isAuthenticated ? '/admin/reportes' : '/admin/login'} replace />
 }
 
 function ProtectedAdmin() {
-  const { isAuthenticated } = useWedding()
+  const { isAuthenticated, isSessionLoading } = useWedding()
+
+  if (isSessionLoading) {
+    return <RouteFallback />
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />

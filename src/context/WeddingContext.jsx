@@ -537,6 +537,7 @@ const mapResponse = (item) => ({
 export function WeddingProvider({ children }) {
   const [state, setState] = useState(loadState)
   const [session, setSession] = useState(null)
+  const [isSessionLoading, setIsSessionLoading] = useState(() => Boolean(supabase))
   // Tokens are intentionally memory-only: Supabase stores only their hash.
   // This lets a newly created invitation be copied in the current panel session
   // without persisting sensitive raw tokens in the browser.
@@ -610,9 +611,28 @@ export function WeddingProvider({ children }) {
   useEffect(() => {
     if (!supabase) return undefined
 
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession))
-    return () => listener.subscription.unsubscribe()
+    let active = true
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return
+      setSession(nextSession)
+      setIsSessionLoading(false)
+    })
+
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        if (active) setSession(data.session)
+      })
+      .catch(() => {
+        if (active) setSession(null)
+      })
+      .finally(() => {
+        if (active) setIsSessionLoading(false)
+      })
+
+    return () => {
+      active = false
+      listener.subscription.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
@@ -718,6 +738,7 @@ export function WeddingProvider({ children }) {
     }
 
     setSession(data.session)
+    setIsSessionLoading(false)
     await refreshRemoteState()
     return { ok: true }
   }, [refreshRemoteState])
@@ -1392,6 +1413,7 @@ export function WeddingProvider({ children }) {
       metrics,
       session,
       isAuthenticated,
+      isSessionLoading,
       isSupabaseConfigured,
       login,
       logout,
@@ -1433,6 +1455,7 @@ export function WeddingProvider({ children }) {
       metrics,
       session,
       isAuthenticated,
+      isSessionLoading,
       login,
       logout,
       buildInviteLink,
