@@ -30,15 +30,12 @@ function attendeeDisplayName(attendee, index) {
   return attendee.name || [attendee.firstName, attendee.lastName].filter(Boolean).join(' ') || `Invitado ${index + 1}`
 }
 
+// Conservada para otros usos relacionados con el evento; el formulario RSVP
+// ya no depende de esta comprobacion.
+// eslint-disable-next-line no-unused-vars
 function hasRsvpDeadlinePassed(deadline) {
   const deadlineAt = new Date(`${deadline}T23:59:59-03:00`)
   return !Number.isNaN(deadlineAt.getTime()) && new Date() > deadlineAt
-}
-
-function formatDeadline(deadline) {
-  return new Intl.DateTimeFormat('es-AR', { dateStyle: 'long' }).format(
-    new Date(`${deadline}T12:00:00-03:00`),
-  )
 }
 
 export default function GuestRsvpPage() {
@@ -48,7 +45,6 @@ export default function GuestRsvpPage() {
     fetchInvitationByToken,
     getRsvpAttendees,
     submitRsvp,
-    weddingEvent,
   } = useWedding()
   const [status, setStatus] = useState(null)
   const [remoteInvitation, setRemoteInvitation] = useState(null)
@@ -81,7 +77,8 @@ export default function GuestRsvpPage() {
       comments: existingResponse?.comments ?? '',
     },
   })
-  const isDeadlineClosed = hasRsvpDeadlinePassed(remoteInvitation?.rsvpDeadline ?? weddingEvent.rsvpDeadline)
+  // La fecha limite se conserva como dato del evento, pero no bloquea el RSVP.
+  const isDeadlineClosed = false
 
   useEffect(() => {
     form.reset({
@@ -175,8 +172,6 @@ export default function GuestRsvpPage() {
           </p>
         </div>
         <div className="feature-note-card">
-          <span>Fecha limite</span>
-          <strong>{formatDeadline(weddingEvent.rsvpDeadline)}</strong>
           {existingResponse ? (
             <p>
               Estado actual: <strong>{existingResponse.status}</strong>
@@ -331,8 +326,7 @@ export default function GuestRsvpPage() {
           </div>
 
           <p className="form-card__footnote">
-            Si necesitas cambiar algo mas adelante, podes volver a entrar con este mismo link
-            hasta la fecha limite.
+            Si necesitas cambiar algo mas adelante, podes volver a entrar con este mismo link.
           </p>
 
           {status?.tone === 'error' ? (

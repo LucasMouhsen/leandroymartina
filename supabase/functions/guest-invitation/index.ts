@@ -41,8 +41,6 @@ Deno.serve(async (request) => {
   }
 
   if (action !== "submit-rsvp") return json({ error: "Acción no válida." }, 400);
-  const deadline = new Date(`${invitation.events.rsvp_deadline}T23:59:59-03:00`);
-  if (new Date() > deadline) return json({ error: "El plazo para confirmar asistencia ya finalizó." }, 409);
   const attendees = Array.isArray(payload?.attendees) ? payload.attendees : [];
   const attending = payload?.attending === "si";
   const confirmed = attendees.filter((item: { attending?: boolean }) => attending && item.attending);

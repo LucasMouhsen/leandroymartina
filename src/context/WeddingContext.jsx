@@ -304,8 +304,6 @@ Preparamos una invitacion especial con toda la informacion del evento, confirmac
 
 \ud83d\udd17 ${link}
 
-Por favor, confirma tu asistencia hasta el 20 de agosto.
-
 Esperamos poder celebrar este dia con vos \u2764\ufe0f`
 }
 
